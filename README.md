@@ -3,6 +3,8 @@
 [![CI](https://github.com/ITF-brik/StepManager/actions/workflows/ci.yml/badge.svg)](https://github.com/ITF-brik/StepManager/actions/workflows/ci.yml)
 [![PS Gallery Version](https://img.shields.io/powershellgallery/v/StepManager.svg?style=flat)](https://www.powershellgallery.com/packages/StepManager)
 [![PS Gallery Downloads](https://img.shields.io/powershellgallery/dt/StepManager.svg?style=flat)](https://www.powershellgallery.com/packages/StepManager)
+[![Release](https://img.shields.io/github/v/release/ITF-brik/StepManager?display_name=tag&sort=semver)](https://github.com/ITF-brik/StepManager/releases)
+[![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
 StepManager est un module PowerShell pour encapsuler des étapes d’exécution avec gestion d’état (Pending/Success/Error), imbrication, logging et gestion d’erreurs (`ContinueOnError`).
 
@@ -137,4 +139,3 @@ $global:StepManagerLogger = { param($Component, $Message, $Severity, $IndentLeve
 ## Licence
 
 Apache-2.0 — voir `LICENSE`.
-
