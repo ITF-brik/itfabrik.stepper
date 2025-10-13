@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build and Release ZIP
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare package
+        id: pack
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'
+          $zipName = "StepManager-$version.zip"
+          $paths = @('StepManager.psd1','StepManager.psm1','Public','Private','README.md','LICENSE')
+          Compress-Archive -Path $paths -DestinationPath $zipName -Force
+          echo "zip=$zipName" >> $env:GITHUB_OUTPUT
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: ${{ steps.pack.outputs.zip }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: ${{ steps.pack.outputs.zip }}
+          generate_release_notes: true
+

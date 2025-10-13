@@ -1,0 +1,14 @@
+# Normalize line endings to LF in repo
+* text=auto eol=lf
+
+# Treat common binary assets as binary
+*.zip binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.exe binary
+*.dll binary
+

@@ -1,0 +1,23 @@
+# General
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# PowerShell/Packaging
+TestResults/
+PesterTestResults*.xml
+*.nupkg
+*.zip
+*.tgz
+*.nuspec
+
+# Build output (if any)
+bin/
+obj/
+
