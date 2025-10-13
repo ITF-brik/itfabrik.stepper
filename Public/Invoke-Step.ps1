@@ -58,24 +58,21 @@ Invoke-Step -Name 'Exemple' -ScriptBlock {
 function Invoke-Step {
     [CmdletBinding()]
     [OutputType('Step')]
-	param(
-		[Parameter(Mandatory)]
-		[ValidateNotNullOrEmpty()]
-		[ValidateScript({
-			if ($_.Length -gt 80) { throw "Le nom de l'étape ne doit pas dépasser 80 caractères." }
-			if ($_ -match '[\\/:*?"<>|]') { throw "Le nom de l'étape contient des caractères interdits (\\ / : * ? \"" < > |)." }
-			return $true
-		})]
-		[string]$Name,
-		[switch]$ContinueOnError = $false,
-		[Parameter(Mandatory)]
-		[ScriptBlock]$ScriptBlock
-	)
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript({
+            if ($_.Length -gt 80) { throw "Le nom de l'étape ne doit pas dépasser 80 caractères." }
+            if ($_ -match '[\\/:*?"<>|]') { throw "Le nom de l'étape contient des caractères interdits (\\ / : * ? \"" < > |)." }
+            return $true
+        })]
+        [string]$Name,
+        [switch]$ContinueOnError = $false,
+        [Parameter(Mandatory)]
+        [ScriptBlock]$ScriptBlock
+    )
 
-    # Validation supplémentaire : le ScriptBlock ne doit pas être vide
-    if (-not $ScriptBlock.ToString().Trim()) {
-        throw 'Le ScriptBlock ne doit pas être vide.'
-    }
+    # Autoriser les ScriptBlock vides (no-op) pour rester compatible avec les tests et usages
 
     $step = New-Step -Name $Name -ContinueOnError:$ContinueOnError.IsPresent
     $errorDetail = $null
@@ -98,3 +95,4 @@ function Invoke-Step {
     }
     return $step
 }
+
