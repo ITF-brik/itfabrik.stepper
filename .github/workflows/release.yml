@@ -43,8 +43,10 @@ jobs:
   publish_psgallery:
     name: Publish to PowerShell Gallery
     needs: release
-    if: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.PSGALLERY_API_KEY != '' }}
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: windows-latest
+    env:
+      PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,8 +65,6 @@ jobs:
 
       - name: Publish module
         shell: pwsh
-        env:
-          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+        if: ${{ env.PSGALLERY_API_KEY != '' }}
         run: |
           Publish-Module -Path . -Repository PSGallery -NuGetApiKey $env:PSGALLERY_API_KEY -Verbose
-          token: ${{ secrets.RELEASE_TOKEN }}
