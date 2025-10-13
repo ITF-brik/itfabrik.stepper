@@ -15,6 +15,10 @@
     PrivateData       = @{
         PSData = @{
             Tags = @('steps','logging','workflow')
+            LicenseUri   = 'https://github.com/ITF-brik/StepManager/blob/main/LICENSE'
+            ProjectUri   = 'https://github.com/ITF-brik/StepManager'
+            IconUri      = 'https://raw.githubusercontent.com/ITF-brik/StepManager/main/Media/icon.png'
+            ReleaseNotes = 'Voir CHANGELOG.md et la page Releases sur GitHub.'
         }
     }
 }
