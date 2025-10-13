@@ -22,8 +22,8 @@ function Write-StepMessage {
         [int]$IndentLevel = 0
     )
 
-    $indent = if ($IndentLevel -gt 0) { ' ' * ($IndentLevel * 2) } else { '' }
-    $text = "$prefix${indent}$Message"
+    $indent = if ($script:InsideStep -and $IndentLevel -gt 0) { ' ' * ($IndentLevel * 2) } else { '' }
+    $text = "$prefix $indent$Message"
     Write-Host $text -ForegroundColor Gray
 }
 
@@ -52,5 +52,4 @@ function  Invoke-Logger{
         & $logger $Component $Message $Severity $finalIndent
     }
 }
-
 
