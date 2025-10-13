@@ -27,10 +27,10 @@ jobs:
       - name: ScriptAnalyzer
         shell: pwsh
         run: |
-          Invoke-ScriptAnalyzer -Path ./Public,./Private,./StepManager.psm1 -Recurse -Severity Warning,Error
+          # Analyze the whole repo to avoid array conversion issues on some runners
+          Invoke-ScriptAnalyzer -Path . -Recurse -Severity @('Warning','Error')
 
       - name: Run Pester tests
         shell: pwsh
         run: |
           Invoke-Pester -CI -Path ./Tests
-
