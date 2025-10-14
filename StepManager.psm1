@@ -11,5 +11,5 @@ Get-ChildItem -Path "$PSScriptRoot\Private\Functions" -Filter *.ps1 -File -Error
 Get-ChildItem -Path "$PSScriptRoot\Public" -Filter *.ps1 -File -ErrorAction SilentlyContinue |
     ForEach-Object { . $_.FullName }
 
-# Export only the main entrypoint
-Export-ModuleMember -Function Invoke-Step -Alias @()
+# Export public functions
+Export-ModuleMember -Function Invoke-Step,Write-Log -Alias @()

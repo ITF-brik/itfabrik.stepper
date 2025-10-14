@@ -12,7 +12,11 @@ function Set-Step {
     $current.Detail = $Detail
 
     if ($Status -eq 'Error') {
-        Invoke-Logger -Component 'StepManager' -Severity 'Error' -Message "Erreur dans l'étape [$($current.Name)] : $Detail" -IndentLevel ($current.Level)
+        # Laisser l'auto-indentation gérer le niveau quand non spécifié
+        Invoke-Logger -Component 'StepManager' -Severity 'Error' -Message "Erreur dans l'étape [$($current.Name)] : $Detail"
+    }
+    else{
+        Invoke-Logger -Component 'StepManager' -Severity 'Verbose' -Message "Étape [$($current.Name)] définie sur le statut : $Status"
     }
 }
 

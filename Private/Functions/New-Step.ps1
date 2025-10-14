@@ -24,9 +24,18 @@ function New-Step {
     $parent = Get-CurrentStep
     $step = [Step]::new($Name, $parent, $ContinueOnError.IsPresent)
 
+    # Gestion d'une pile d'indentation contextuelle pour chaque Step imbriquée (protégée pour runspace)
+    [System.Threading.Monitor]::Enter($script:StepStateLock)
+    try {
+        if (-not $script:CurrentStepIndentStack) { $script:CurrentStepIndentStack = @() }
+        $script:CurrentStepIndentStack += ($step.Level + 1)
+    }
+    finally { [System.Threading.Monitor]::Exit($script:StepStateLock) }
+
     Push-Step -Step $step
 
-    Invoke-Logger -Component 'StepManager' -Message "Création de l'étape : $Name" -Severity 'Information' -IndentLevel $step.Level
+    Invoke-Logger -Component 'StepManager' -Message "Création de l'étape : $Name" -Severity Verbose -IndentLevel $step.Level
+    Invoke-Logger -Component 'StepManager' -Message "$Name" -Severity Info -IndentLevel $step.Level
 
     return $step
 }

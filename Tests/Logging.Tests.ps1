@@ -1,17 +1,21 @@
-﻿$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 
-# Import the module from the repo root
-$modulePath = Join-Path (Split-Path $PSScriptRoot -Parent) 'StepManager.psd1'
-Import-Module $modulePath -Force
 
 Describe 'Logging' {
     BeforeAll {
-        . (Join-Path $PSScriptRoot '..\Private\Helpers.ps1')
+        # Import du module depuis la racine
+        $modulePath = Join-Path (Split-Path $PSScriptRoot -Parent) 'StepManager.psd1'
+        Import-Module $modulePath -Force
         . (Join-Path $PSScriptRoot '..\Private\Functions\New-Step.ps1')
         . (Join-Path $PSScriptRoot '..\Private\Functions\Set-Step.ps1')
         . (Join-Path $PSScriptRoot '..\Private\Functions\Get-CurrentStep.ps1')
+        . (Join-Path $PSScriptRoot '..\Private\Functions\Invoke-Logger.ps1')
+        . (Join-Path $PSScriptRoot '..\Private\Helpers.ps1')
         . (Join-Path $PSScriptRoot '..\Private\State.ps1')
         . (Join-Path $PSScriptRoot '..\Private\Classes\Step.ps1')
+        
+        # Mock Write-Host avant import du module pour qu'il soit pris en compte dans le scope du module
+        Mock Write-Host { } -ModuleName StepManager
     }
 
     BeforeEach {
@@ -20,44 +24,63 @@ Describe 'Logging' {
     }
 
     It 'affiche un message avec Write-StepMessage' {
+        . (Join-Path $PSScriptRoot '..\Private\Helpers.ps1')
         Mock Write-Host { }
-        Write-StepMessage -Prefix '[UnitTest]' -Message 'Test log' -IndentLevel 2
+        Write-StepMessage -Severity 'Info' -Message 'Test log' -IndentLevel 2 -Component 'UnitTest'
         Assert-MockCalled Write-Host -Exactly 1 -Scope It -ParameterFilter { $Object -match 'Test log' }
     }
 
-    It 'utilise Invoke-Logger (fallback console)' {
-        Mock Write-Host { }
-        Invoke-Logger -Component 'UnitTest' -Message 'Log message' -Severity 'Information' -IndentLevel 1
-        Assert-MockCalled Write-Host -Exactly 1 -Scope It -ParameterFilter { $Object -match '\[UnitTest\]\[Information\] Log message' }
+
+    It 'utilise Write-Log (fallback console)' {
+        Mock Write-StepMessage { } -ModuleName StepManager
+        Write-Log -Message 'Log message' -Severity 'Info'
+        Assert-MockCalled Write-StepMessage -Exactly 1 -Scope It -ModuleName StepManager -ParameterFilter { $Message -eq 'Log message' -and $Severity -eq 'Info' }
     }
 
     It 'utilise un logger personnalisé si défini' {
-        $Script:calls = @()
+        $global:calls = @()
         $customLogger = { param($Component, $Message, $Severity, $IndentLevel) $global:calls += "$Component|$Message|$Severity|$IndentLevel" }
-        Set-Variable -Name StepManagerLogger -Value $customLogger -Scope Script
-        Invoke-Logger -Component 'Custom' -Message 'Msg' -Severity 'Warning' -IndentLevel 3
-        Remove-Variable -Name StepManagerLogger -Scope Script
-        $global:calls | Should -Contain 'Custom|Msg|Warning|3'
+        Set-Variable -Name StepManagerLogger -Value $customLogger -Scope Global
+        Write-Log -Message 'Msg' -Severity 'Warning'
+        Remove-Variable -Name StepManagerLogger -Scope Global
+        $global:calls | Should -Contain '|Msg|Warning|1'
         Remove-Variable -Name calls -Scope Global -ErrorAction SilentlyContinue
     }
 
     It "log lors de la création d'une étape" {
-        Mock Write-Host { }
+        $global:calls = @()
+        $customLogger = { param($Component, $Message, $Severity, $IndentLevel) $global:calls += "$Component|$Message|$Severity|$IndentLevel" }
         $oldLogger = $null
         try {
-            $oldLogger = Get-Variable StepManagerLogger -Scope Script -ErrorAction SilentlyContinue
-            Remove-Variable StepManagerLogger -Scope Script -ErrorAction SilentlyContinue
+            $oldVerbosePreference = $VerbosePreference
+            $Global:VerbosePreference = 'Continue'
+            $oldLogger = Get-Variable StepManagerLogger -Scope Global -ErrorAction SilentlyContinue
+            Set-Variable -Name StepManagerLogger -Value $customLogger -Scope Global
             New-Step -Name 'LogStepTest' | Out-Null
+            $Global:VerbosePreference = $oldVerbosePreference
         } finally {
-            if ($oldLogger) { Set-Variable -Name StepManagerLogger -Value $oldLogger.Value -Scope Script }
+            if ($oldLogger) { Set-Variable -Name StepManagerLogger -Value $oldLogger.Value -Scope Global } else { Remove-Variable -Name StepManagerLogger -Scope Global -ErrorAction SilentlyContinue }
         }
-        Assert-MockCalled Write-Host -Exactly 1 -Scope It -ParameterFilter { $Object -match "Création de l'étape : LogStepTest" }
+        $global:calls | Should -BeExactly @(
+            "StepManager|Création de l'étape : LogStepTest|Verbose|0"
+            "StepManager|LogStepTest|Info|0"
+        )
+        Remove-Variable -Name calls -Scope Global -ErrorAction SilentlyContinue
     }
 
     It "log une erreur via Set-Step" {
-        Mock Write-Host { }
+    $global:calls = @()
+    $customLogger = { param($Component, $Message, $Severity, $IndentLevel) $global:calls += "$Component|$Message|$Severity|$IndentLevel" }
+    $oldLogger = $null
+    try {
+        $oldLogger = Get-Variable StepManagerLogger -Scope Global -ErrorAction SilentlyContinue
+        Set-Variable -Name StepManagerLogger -Value $customLogger -Scope Global
         $step = New-Step -Name 'ErrStepTest'
         Set-Step -Status Error -Detail 'Erreur test' | Out-Null
-        Assert-MockCalled Write-Host -Exactly 1 -Scope It -ParameterFilter { $Object -match "Erreur dans l'étape \[ErrStepTest\] : Erreur test" }
+    } finally {
+        if ($oldLogger) { Set-Variable -Name StepManagerLogger -Value $oldLogger.Value -Scope Global } else { Remove-Variable -Name StepManagerLogger -Scope Global -ErrorAction SilentlyContinue }
+    }
+    $global:calls | Should -Contain "StepManager|Erreur dans l'étape [ErrStepTest] : Erreur test|Error|0"
+    Remove-Variable -Name calls -Scope Global -ErrorAction SilentlyContinue
     }
 }

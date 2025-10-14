@@ -12,7 +12,7 @@ Nom de l'étape à exécuter.
 Bloc de code à exécuter dans l'étape.
 
 .PARAMETER ContinueOnError
-Indique si l'exécution doit continuer en cas d'erreur dans l'étape. Par défaut : $false (l'exception n'est pas propagée, le statut devient Error).
+Indique si l'exécution doit continuer en cas d'erreur dans l'étape. Par défaut : $false.
 
 .OUTPUTS
 Step
@@ -52,7 +52,7 @@ Invoke-Step -Name 'Exemple' -ScriptBlock {
 Invoke-Step -Name 'Exemple' -ScriptBlock {
     throw 'Erreur volontaire'
 }
-# L'étape sera en statut 'Error' (pas de propagation d'exception par défaut)
+# L'étape sera en statut 'Error' (propagation possible selon le parent)
 
 #>
 function Invoke-Step {
@@ -69,30 +69,35 @@ function Invoke-Step {
         [string]$Name,
         [switch]$ContinueOnError = $false,
         [Parameter(Mandatory)]
-        [ScriptBlock]$ScriptBlock
+        [ScriptBlock]$ScriptBlock,
+        [switch]$PassThru
     )
 
-    # Autoriser les ScriptBlock vides (no-op) pour rester compatible avec les tests et usages
-
+    # Autoriser les ScriptBlock vides (no-op)
     $step = New-Step -Name $Name -ContinueOnError:$ContinueOnError.IsPresent
     $errorDetail = $null
-    $success = $true
+    $threw = $false
+    $shouldThrow = $false
+    $script:InsideStep = $true
     try {
-        $script:InsideStep = $true
         $null = & $ScriptBlock
     }
     catch {
-        $success = $false
+        $threw = $true
         $errorDetail = $_.Exception.Message
         Set-Step -Status Error -Detail $errorDetail | Out-Null
+        # Propagation contrôlée
+        $shouldThrow = -not $ContinueOnError.IsPresent
+        if ($shouldThrow -and $step.ParentStep -and $step.ParentStep.ContinueOnError) {
+            $shouldThrow = $false
+        }
     }
     finally {
         $script:InsideStep = $false
-        if ($success) {
-            Set-Step -Status Success | Out-Null
-        }
+        if (-not $threw) { Set-Step -Status Success | Out-Null }
         Complete-Step
     }
-    return $step
+    if ($threw -and $shouldThrow) { throw }
+    if ($PassThru) { return $step }
 }
 

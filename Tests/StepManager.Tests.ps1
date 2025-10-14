@@ -12,14 +12,14 @@ Describe 'StepManager' {
 
     It 'exports only Invoke-Step' {
         $cmds = Get-Command -Module StepManager | Select-Object -ExpandProperty Name
-        $cmds | Should -Be @('Invoke-Step')
+        $cmds | Should -Be @('Invoke-Step', 'Write-Log')
     }
 
     It 'returns a step with all statuses' {
-        $s = Invoke-Step -Name 'PendingTest' -ScriptBlock { }
+        $s = Invoke-Step -Name 'PendingTest' -ScriptBlock { } -PassThru
         $s.Status | Should -Be 'Success'
         $s = $null
-        $s = Invoke-Step -Name 'ErrorTest' -ContinueOnError -ScriptBlock { throw 'fail' }
+        $s = Invoke-Step -Name 'ErrorTest' -ContinueOnError -ScriptBlock { throw 'fail' } -PassThru
         $s.Status | Should -Be 'Error'
         $s.Detail | Should -Be 'fail'
     }
@@ -28,10 +28,10 @@ Describe 'StepManager' {
         $step = @(Invoke-Step -Name 'L0' -ScriptBlock {
             Invoke-Step -Name 'L1' -ScriptBlock {
                 Invoke-Step -Name 'L2' -ScriptBlock {
-                    Invoke-Step -Name 'L3' -ScriptBlock { }
-                }
-            }
-        })
+                    Invoke-Step -Name 'L3' -ScriptBlock { } -PassThru
+                } -PassThru
+            } -PassThru
+        } -PassThru)
         $step.Level | Should -Be 0
         $step.Children[0].Level | Should -Be 1
         $step.Children[0].Children[0].Level | Should -Be 2
@@ -39,8 +39,8 @@ Describe 'StepManager' {
     }
 
     It 'handles error in nested step with ContinueOnError' {
-        $parent = Invoke-Step -Name 'Parent' -ContinueOnError -ScriptBlock {
-            Invoke-Step -Name 'Child' -ScriptBlock { throw 'fail' }
+        $parent = Invoke-Step -Name 'Parent' -ContinueOnError -PassThru -ScriptBlock {
+            Invoke-Step -Name 'Child' -PassThru -ScriptBlock { throw 'fail' }
         }
         $parent.Children.Count | Should -Be 1
         $parent.Children[0].Status | Should -Be 'Error'
@@ -49,9 +49,9 @@ Describe 'StepManager' {
 
     It 'returns all steps in correct order (children then parent)' {
         $steps = @(
-            Invoke-Step -Name 'C1' -ScriptBlock { }
-            Invoke-Step -Name 'C2' -ScriptBlock { }
-            Invoke-Step -Name 'P' -ScriptBlock { }
+            Invoke-Step -Name 'C1' -PassThru -ScriptBlock { }
+            Invoke-Step -Name 'C2' -PassThru -ScriptBlock { }
+            Invoke-Step -Name 'P' -PassThru -ScriptBlock { }
         )
         $steps.Count | Should -Be 3
         $steps[0].Name | Should -Be 'C1'
@@ -60,12 +60,12 @@ Describe 'StepManager' {
     }
 
     It 'sets Detail property on error' {
-        $s = Invoke-Step -Name 'ErrDetail' -ContinueOnError -ScriptBlock { throw 'detail test' }
+        $s = Invoke-Step -Name 'ErrDetail' -ContinueOnError -PassThru -ScriptBlock { throw 'detail test' }
         $s.Detail | Should -Be 'detail test'
     }
 
     It 'sets StartTime and EndTime' {
-        $s = Invoke-Step -Name 'TimeTest' -ScriptBlock { Start-Sleep -Milliseconds 10 }
+        $s = Invoke-Step -Name 'TimeTest' -PassThru -ScriptBlock { Start-Sleep -Milliseconds 10 }
         $s.StartTime | Should -Not -Be $null
         $s.EndTime | Should -Not -Be $null
         ($s.EndTime - $s.StartTime).TotalMilliseconds | Should -BeGreaterThan 0
@@ -74,7 +74,7 @@ Describe 'StepManager' {
     It 'returns distinct Step objects in a foreach loop' {
         $items = 1..3
         $steps = foreach ($i in $items) {
-            Invoke-Step -Name "Loop $i" -ScriptBlock { }
+            Invoke-Step -Name "Loop $i" -PassThru -ScriptBlock { }
         }
         $steps.Count | Should -Be 3
         $steps[0].Name | Should -Be 'Loop 1'
@@ -90,10 +90,10 @@ Describe 'StepManager' {
         { Invoke-Step -Name '' -ScriptBlock { } } | Should -Throw
     }
 
-    # Pour la compatibilité PowerShell Core, prévoir un pipeline CI multi-plateforme (hors test local)
+    # Pour la compatibilité PowerShell Core, prévoir un pipeline CI multi‑plateforme (hors test local)
 
     It 'returns a step for simple Invoke-Step' {
-        $s = Invoke-Step -Name 'A' -ScriptBlock { }
+        $s = Invoke-Step -Name 'A' -PassThru -ScriptBlock { }
         $s.Name | Should -Be 'A'
         $s.Level | Should -Be 0
         $s.Status | Should -Be 'Success'
@@ -101,7 +101,7 @@ Describe 'StepManager' {
     }
 
     It 'nests via Invoke-Step and returns both steps' {
-        $parent = Invoke-Step -Name 'Parent' -ScriptBlock { Invoke-Step -Name 'Child' -ScriptBlock { } }
+        $parent = Invoke-Step -Name 'Parent' -PassThru -ScriptBlock { Invoke-Step -Name 'Child' -ScriptBlock { } }
         $parent.Children.Count | Should -Be 1
         $parent.Children[0].Name | Should -Be 'Child'
         $parent.Children[0].Level | Should -Be 1
@@ -111,20 +111,17 @@ Describe 'StepManager' {
     }
 
     It 'propagates error status on failure with ContinueOnError' {
-        $s = Invoke-Step -Name 'Err' -ContinueOnError -ScriptBlock { throw 'x' }
+        $s = Invoke-Step -Name 'Err' -PassThru -ContinueOnError -ScriptBlock { throw 'x' }
         $s.Status | Should -Be 'Error'
         $s.Detail | Should -Be 'x'
     }
 
-    It 'Invoke-Step returns Error status when ContinueOnError is false' {
-        $s = Invoke-Step -Name 'Err' -ScriptBlock { throw 'x' }
-        $s.Status | Should -Be 'Error'
-        $s.Detail | Should -Be 'x'
+    It 'Invoke-Step throws when ContinueOnError is false' {
+        { Invoke-Step -Name 'Err' -ScriptBlock { throw 'x' } } | Should -Throw
     }
 
     It 'Invoke-Step does not throw when ContinueOnError is true' {
         { Invoke-Step -Name 'Err' -ContinueOnError -ScriptBlock { throw 'x' } } | Should -Not -Throw
     }
 }
-
 

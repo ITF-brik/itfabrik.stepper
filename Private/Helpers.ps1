@@ -17,39 +17,47 @@ Niveau d'indentation (nombre d'espaces).
 function Write-StepMessage {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)] [string]$prefix,
+        [Parameter(Mandatory)] [string]$Severity,
         [Parameter(Mandatory)] [string]$Message,
-        [int]$IndentLevel = 0
+        [int]$IndentLevel = 0,
+        [string]$StepName = '',
+        [string]$Component = '',
+        [string]$ForegroundColor
     )
 
-    $indent = if ($script:InsideStep -and $IndentLevel -gt 0) { ' ' * ($IndentLevel * 2) } else { '' }
-    $text = "$prefix $indent$Message"
-    Write-Host $text -ForegroundColor Gray
-}
+    # Détection de PowerShell 7+
+    $isPwsh7 = $PSVersionTable.PSVersion.Major -ge 7
 
-# Appelle le logger injecté via VariableManager, ou fallback sur Write-StepMessage
-function  Invoke-Logger{
-    param(
-        [Parameter(Mandatory)] [string]$Component,
-        [Parameter(Mandatory)] [string]$Message,
-        [Parameter(Mandatory)] [ValidateSet('Information','Warning','Error')] [string]$Severity,
-        [int]$IndentLevel = 0
-    )
-    $logger = $null
-    $finalIndent = $IndentLevel
-    if ($script:InsideStep) { $finalIndent++ }
-    try {
-        # On tente de récupérer le logger depuis en utilisant le module PSVariableManager
-        $logger = Get-PSVariable -Name 'StepManagerLogger' -ErrorAction Stop
-    } catch {
-        $logger = (Get-Variable -Name 'StepManagerLogger' -Scope Script -ErrorAction SilentlyContinue).Value
+    # Dictionnaire d'icônes par sévérité (Unicode, fallback via [Severity] si non supporté)
+    $icons = @{
+        'Info'    = 'ℹ'
+        'Success' = '✓'
+        'Warning' = '⚠'
+        'Error'   = '✖'
+        'Debug'   = '⚙'
+        'Verbose' = '…'
     }
-    if ($null -eq $logger) {
-        # Fallback simple : affichage console avec formalisme
-        $prefix = "[$Component][$Severity]"
-        Write-StepMessage -Prefix $prefix -Message $Message -IndentLevel $finalIndent
-    } else {
-        & $logger $Component $Message $Severity $finalIndent
+
+    $prefixRaw = if ($isPwsh7 -and $icons.ContainsKey($Severity)) { $icons[$Severity] } else { "[$Severity]" }
+    # Padding spécifique par sévérité pour un alignement optimal
+    $nbsp = [char]0x2007
+    function Get-NbspString($count) { [string]::new(@($nbsp) * $count) }
+    
+    switch ($Severity) {
+        'Info'    { $prefix = $prefixRaw + (Get-NbspString 4) ; $ForegroundColor = if(-not $ForegroundColor){ 'Gray'} else{$ForegroundColor} }
+        'Success' { $prefix = $prefixRaw + (Get-NbspString 3) ; $ForegroundColor = if(-not $ForegroundColor){ 'Green'} else{$ForegroundColor}}
+        'Warning' { $prefix = $prefixRaw + (Get-NbspString 4) ; $ForegroundColor = if(-not $ForegroundColor){ 'Yellow'} else{$ForegroundColor}}
+        'Error'   { $prefix = $prefixRaw + (Get-NbspString 3) ; $ForegroundColor = if(-not $ForegroundColor){ 'Red'} else{$ForegroundColor}}
+        'Debug'   { $prefix = $prefixRaw + (Get-NbspString 3) ; $ForegroundColor = if(-not $ForegroundColor){ 'Cyan'} else{$ForegroundColor}}
+        'Verbose' { $prefix = $prefixRaw + (Get-NbspString 3) ; $ForegroundColor = if(-not $ForegroundColor){ 'Magenta'} else{$ForegroundColor}}
+        default   { $prefix = $prefixRaw + (Get-NbspString 3) ; $ForegroundColor = if(-not $ForegroundColor){ 'White'} else{$ForegroundColor}}
     }
+
+    $indent = if ($IndentLevel -gt 0) { ' ' * ($IndentLevel * 2) } else { '' }
+    $now = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+    $step = if ($StepName) { "[$StepName]" } else { '' }
+    # Ne plus afficher le Component ici pour éviter la duplication d'étiquettes
+    $text = "[$now] $prefix$indent$step $Message"
+    Write-Host $text -ForegroundColor $ForegroundColor
 }
 
