@@ -8,6 +8,11 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - Planned: CI via GitHub Actions (Pester + PSScriptAnalyzer)
 - Planned: Tag-driven release packaging
 
+## [2025.10.1.7] - 2025-10-13
+- CI/Release: publier via PSResourceGet (Publish-PSResource) pour éviter le bootstrap du provider NuGet
+- CI/Release: condition de job corrigée et sécurisée (pas de secrets dans if)
+- Manifest: bump ModuleVersion à 2025.10.1.7
+
 ## [2025.10.1.5] - 2025-10-13
 - Fix: Autoriser les ScriptBlock vides dans `Invoke-Step` (steps no-op)
 - Fix(logging): espacement du fallback console et indentation cohérente
