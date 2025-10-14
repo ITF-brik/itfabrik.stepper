@@ -51,20 +51,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare PowerShellGet
+      - name: Prepare PSResourceGet
         shell: pwsh
         run: |
-          Install-PackageProvider -Name NuGet -Scope CurrentUser -Force -MinimumVersion 2.8.5.201
-          Install-Module PowerShellGet -Scope CurrentUser -Force -AllowClobber
-          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module Microsoft.PowerShell.PSResourceGet -Scope CurrentUser -Force -AllowClobber
+          # Register PSGallery if missing (PSResourceGet)
+          Register-PSResourceRepository -Name PSGallery -Uri 'https://www.powershellgallery.com/api/v2' -Trusted -ErrorAction SilentlyContinue
 
       - name: Validate manifest
         shell: pwsh
         run: |
           Test-ModuleManifest -Path ./StepManager.psd1 | Out-String | Write-Host
 
-      - name: Publish module
+      - name: Publish module (PSGallery)
         shell: pwsh
         if: ${{ env.PSGALLERY_API_KEY != '' }}
         run: |
-          Publish-Module -Path . -Repository PSGallery -NuGetApiKey $env:PSGALLERY_API_KEY -Verbose
+          Publish-PSResource -Path . -Repository PSGallery -ApiKey $env:PSGALLERY_API_KEY -Verbose
