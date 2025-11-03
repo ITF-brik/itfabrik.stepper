@@ -46,9 +46,9 @@ Ce guide décrit pas à pas comment publier une nouvelle version du module itfab
 ## 7) Verifier la publication
 - Installer la version publiee depuis PSGallery (depuis une session propre):
   ```powershell
-  Install-Module itfabrik.stepper -Repository PSGallery -Scope CurrentUser -Force -RequiredVersion X.Y.Z
-  Import-Module itfabrik.stepper -RequiredVersion X.Y.Z -Force
-  Get-Module itfabrik.stepper | Select-Object Name,Version,Path
+  Install-Module ITFabrik.Stepper -Repository PSGallery -Scope CurrentUser -Force -RequiredVersion X.Y.Z
+  Import-Module ITFabrik.Stepper -RequiredVersion X.Y.Z -Force
+  Get-Module ITFabrik.Stepper | Select-Object Name,Version,Path
   ```
 
 ## 8) Bonnes pratiques

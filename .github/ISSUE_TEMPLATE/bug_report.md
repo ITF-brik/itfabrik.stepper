@@ -1,6 +1,6 @@
 ---
 name: Rapport de bug
-about: Signaler un problème avec itfabrik.stepper
+about: Signaler un problème avec ITFabrik.Stepper
 labels: bug
 assignees: ''
 ---
@@ -18,6 +18,7 @@ assignees: ''
 ## Environnement
 - OS: (Windows/Linux/macOS)
 - Version PowerShell: (`$PSVersionTable.PSVersion`)
-- Version du module: (`Get-Module itfabrik.stepper | Select Version`)
+- Version du module: (`Get-Module ITFabrik.Stepper | Select Version`)
 
 ## Contexte additionnel
+

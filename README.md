@@ -4,12 +4,12 @@
 - Vue d’ensemble et guides: `docs/index.md`
 
 [![CI](https://github.com/ITF-brik/itfabrik.stepper/actions/workflows/ci.yml/badge.svg)](https://github.com/ITF-brik/itfabrik.stepper/actions/workflows/ci.yml)
-[![PS Gallery Version](https://img.shields.io/powershellgallery/v/itfabrik.stepper.svg?style=flat)](https://www.powershellgallery.com/packages/itfabrik.stepper)
-[![PS Gallery Downloads](https://img.shields.io/powershellgallery/dt/itfabrik.stepper.svg?style=flat)](https://www.powershellgallery.com/packages/itfabrik.stepper)
+[![PS Gallery Version](https://img.shields.io/powershellgallery/v/ITFabrik.Stepper.svg?style=flat)](https://www.powershellgallery.com/packages/ITFabrik.Stepper)
+[![PS Gallery Downloads](https://img.shields.io/powershellgallery/dt/ITFabrik.Stepper.svg?style=flat)](https://www.powershellgallery.com/packages/ITFabrik.Stepper)
 [![Release](https://img.shields.io/github/v/release/ITF-brik/itfabrik.stepper?display_name=tag&sort=semver)](https://github.com/ITF-brik/itfabrik.stepper/releases)
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
-itfabrik.stepper est un module PowerShell pour encapsuler des étapes d'exécution avec gestion d'état (Pending/Success/Error), imbrication, logging personnalisable et gestion d'erreurs (`ContinueOnError`).
+ITFabrik.Stepper est un module PowerShell pour encapsuler des étapes d'exécution avec gestion d'état (Pending/Success/Error), imbrication, logging personnalisable et gestion d'erreurs (`ContinueOnError`).
 
 ---
 
@@ -18,27 +18,27 @@ itfabrik.stepper est un module PowerShell pour encapsuler des étapes d'exécuti
 - Depuis PowerShell Gallery (recommandé):
 
 ```powershell
-Install-Module itfabrik.stepper -Scope CurrentUser -Force
+Install-Module ITFabrik.Stepper -Scope CurrentUser -Force
 # Puis si nécessaire
-Import-Module itfabrik.stepper -Force
+Import-Module ITFabrik.Stepper -Force
 ```
 
 - Mise à jour:
 
 ```powershell
-Update-Module itfabrik.stepper
+Update-Module ITFabrik.Stepper
 ```
 
 - Installation manuelle depuis GitHub Release:
 
 ```powershell
 $tag = (Invoke-RestMethod https://api.github.com/repos/ITF-brik/itfabrik.stepper/releases/latest).tag_name
-$zip = Join-Path $env:TEMP "itfabrik.stepper-$tag.zip"
-Invoke-WebRequest -Uri "https://github.com/ITF-brik/itfabrik.stepper/releases/download/$tag/itfabrik.stepper-$tag.zip" -OutFile $zip
-$dst = Join-Path $HOME "Documents/PowerShell/Modules/itfabrik.stepper"
+$zip = Join-Path $env:TEMP "ITFabrik.Stepper-$tag.zip"
+Invoke-WebRequest -Uri "https://github.com/ITF-brik/itfabrik.stepper/releases/download/$tag/ITFabrik.Stepper-$tag.zip" -OutFile $zip
+$dst = Join-Path $HOME "Documents/PowerShell/Modules/ITFabrik.Stepper"
 if (-not (Test-Path $dst)) { New-Item -ItemType Directory -Path $dst -Force | Out-Null }
 Expand-Archive -Path $zip -DestinationPath $dst -Force
-Import-Module itfabrik.stepper -Force
+Import-Module ITFabrik.Stepper -Force
 ```
 
 ---
@@ -211,7 +211,7 @@ Recommandation: initialiser les modules et la configuration logger en tout débu
 ```powershell
 Begin {
   # 1) Import des modules
-  Import-Module itfabrik.stepper -Force
+Import-Module ITFabrik.Stepper -Force
   Import-Module itfabrik.Logger -Force
 
   # 2) Initialiser le service et déclarer les sinks
