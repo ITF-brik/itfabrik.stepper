@@ -1,4 +1,4 @@
-# StepManager – Roadmap
+# itfabrik.stepper - Roadmap
 
 Cette feuille de route rassemble les axes d'amélioration prévus pour les prochaines versions du module.
 
@@ -37,4 +37,3 @@ Cette feuille de route rassemble les axes d'amélioration prévus pour les proch
 - CI/CD et compatibilité
   - Matrice de tests multi-plateforme (Windows/Linux/macOS) et multi-versions (5.1, 7.x).
   - Analyser avec PSScriptAnalyzer (style et sûreté) et publier les résultats.
-

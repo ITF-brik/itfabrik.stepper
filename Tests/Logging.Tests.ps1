@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Stop'
 Describe 'Logging' {
     BeforeAll {
         # Import du module depuis la racine
-        $modulePath = Join-Path (Split-Path $PSScriptRoot -Parent) 'StepManager.psd1'
+        $modulePath = Join-Path (Split-Path $PSScriptRoot -Parent) 'itfabrik.stepper.psd1'
         Import-Module $modulePath -Force
         . (Join-Path $PSScriptRoot '..\Private\Functions\New-Step.ps1')
         . (Join-Path $PSScriptRoot '..\Private\Functions\Set-Step.ps1')
@@ -15,7 +15,7 @@ Describe 'Logging' {
         . (Join-Path $PSScriptRoot '..\Private\Classes\Step.ps1')
         
         # Mock Write-Host avant import du module pour qu'il soit pris en compte dans le scope du module
-        Mock Write-Host { } -ModuleName StepManager
+        Mock Write-Host { } -ModuleName itfabrik.stepper
     }
 
     BeforeEach {
@@ -32,9 +32,9 @@ Describe 'Logging' {
 
 
     It 'utilise Write-Log (fallback console)' {
-        Mock Write-StepMessage { } -ModuleName StepManager
+        Mock Write-StepMessage { } -ModuleName itfabrik.stepper
         Write-Log -Message 'Log message' -Severity 'Info'
-        Assert-MockCalled Write-StepMessage -Exactly 1 -Scope It -ModuleName StepManager -ParameterFilter { $Message -eq 'Log message' -and $Severity -eq 'Info' }
+        Assert-MockCalled Write-StepMessage -Exactly 1 -Scope It -ModuleName itfabrik.stepper -ParameterFilter { $Message -eq 'Log message' -and $Severity -eq 'Info' }
     }
 
     It 'utilise un logger personnalisé si défini' {

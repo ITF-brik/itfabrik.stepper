@@ -1,12 +1,12 @@
-# StepManager
+# itfabrik.stepper
 
-[![CI](https://github.com/ITF-brik/StepManager/actions/workflows/ci.yml/badge.svg)](https://github.com/ITF-brik/StepManager/actions/workflows/ci.yml)
-[![PS Gallery Version](https://img.shields.io/powershellgallery/v/StepManager.svg?style=flat)](https://www.powershellgallery.com/packages/StepManager)
-[![PS Gallery Downloads](https://img.shields.io/powershellgallery/dt/StepManager.svg?style=flat)](https://www.powershellgallery.com/packages/StepManager)
-[![Release](https://img.shields.io/github/v/release/ITF-brik/StepManager?display_name=tag&sort=semver)](https://github.com/ITF-brik/StepManager/releases)
+[![CI](https://github.com/ITF-brik/itfabrik.stepper/actions/workflows/ci.yml/badge.svg)](https://github.com/ITF-brik/itfabrik.stepper/actions/workflows/ci.yml)
+[![PS Gallery Version](https://img.shields.io/powershellgallery/v/itfabrik.stepper.svg?style=flat)](https://www.powershellgallery.com/packages/itfabrik.stepper)
+[![PS Gallery Downloads](https://img.shields.io/powershellgallery/dt/itfabrik.stepper.svg?style=flat)](https://www.powershellgallery.com/packages/itfabrik.stepper)
+[![Release](https://img.shields.io/github/v/release/ITF-brik/itfabrik.stepper?display_name=tag&sort=semver)](https://github.com/ITF-brik/itfabrik.stepper/releases)
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
-StepManager est un module PowerShell pour encapsuler des étapes d'exécution avec gestion d'état (Pending/Success/Error), imbrication, logging personnalisable et gestion d'erreurs (`ContinueOnError`).
+itfabrik.stepper est un module PowerShell pour encapsuler des étapes d'exécution avec gestion d'état (Pending/Success/Error), imbrication, logging personnalisable et gestion d'erreurs (`ContinueOnError`).
 
 ---
 
@@ -15,27 +15,27 @@ StepManager est un module PowerShell pour encapsuler des étapes d'exécution av
 - Depuis PowerShell Gallery (recommandé):
 
 ```powershell
-Install-Module StepManager -Scope CurrentUser -Force
+Install-Module itfabrik.stepper -Scope CurrentUser -Force
 # Puis si nécessaire
-Import-Module StepManager -Force
+Import-Module itfabrik.stepper -Force
 ```
 
 - Mise à jour:
 
 ```powershell
-Update-Module StepManager
+Update-Module itfabrik.stepper
 ```
 
 - Installation manuelle depuis GitHub Release:
 
 ```powershell
-$tag = (Invoke-RestMethod https://api.github.com/repos/ITF-brik/StepManager/releases/latest).tag_name
-$zip = Join-Path $env:TEMP "StepManager-$tag.zip"
-Invoke-WebRequest -Uri "https://github.com/ITF-brik/StepManager/releases/download/$tag/StepManager-$tag.zip" -OutFile $zip
-$dst = Join-Path $HOME "Documents/PowerShell/Modules/StepManager"
+$tag = (Invoke-RestMethod https://api.github.com/repos/ITF-brik/itfabrik.stepper/releases/latest).tag_name
+$zip = Join-Path $env:TEMP "itfabrik.stepper-$tag.zip"
+Invoke-WebRequest -Uri "https://github.com/ITF-brik/itfabrik.stepper/releases/download/$tag/itfabrik.stepper-$tag.zip" -OutFile $zip
+$dst = Join-Path $HOME "Documents/PowerShell/Modules/itfabrik.stepper"
 if (-not (Test-Path $dst)) { New-Item -ItemType Directory -Path $dst -Force | Out-Null }
 Expand-Archive -Path $zip -DestinationPath $dst -Force
-Import-Module StepManager -Force
+Import-Module itfabrik.stepper -Force
 ```
 
 ---
@@ -178,9 +178,9 @@ Invoke-Step -Name 'Exemple' -ContinueOnError:$false -ScriptBlock {
 
 ## Intégration et personnalisation du logging
 
-Le module StepManager intègre une fonction de mise en forme avancée des messages console: timestamp, icônes, couleurs, indentation selon le niveau d'imbrication. Par défaut, tous les messages sont affichés via la console (`Write-StepMessage`).
+Le module itfabrik.stepper intègre une fonction de mise en forme avancée des messages console: timestamp, icônes, couleurs, indentation selon le niveau d'imbrication. Par défaut, tous les messages sont affichés via la console (`Write-StepMessage`).
 
-Il est possible de raccorder StepManager à un module de logging externe pour bénéficier de fonctionnalités avancées (journalisation fichier, SIEM, etc.). Pour cela, définissez la variable globale `$StepManagerLogger` avec un scriptblock conforme à la signature suivante:
+Il est possible de raccorder itfabrik.stepper à un module de logging externe pour bénéficier de fonctionnalités avancées (journalisation fichier, SIEM, etc.). Pour cela, définissez la variable globale `$StepManagerLogger` avec un scriptblock conforme à la signature suivante:
 
 ```powershell
 $global:StepManagerLogger = {
@@ -198,6 +198,28 @@ Spécifications à respecter pour un logger externe:
 
 - Accepter les 4 paramètres ci-dessus, dans l'ordre.
 - Ne pas interrompre l'exécution (pas d'exception non gérée).
+
+---
+
+## Initialisation rapide — Logger fichier
+
+- Minimal (sans rotation):
+
+```powershell
+$global:StepManagerLogger = {
+  param($Component, $Message, $Severity, $IndentLevel)
+  $line = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [$Severity] [$Component] $(' ' * ($IndentLevel*2))$Message"
+  Add-Content -Path "$HOME/Logs/stepper.log" -Value $line -Encoding UTF8
+}
+```
+
+- Avec rotation (taille/quotidienne): copiez la fonction `Set-StepperFileLogger` depuis `docs/sinks/file.md`, puis:
+
+```powershell
+Set-StepperFileLogger -Path "$HOME/Logs/stepper.log" -Rotation Size -MaxSizeMB 5 -MaxRolls 3
+# ou
+Set-StepperFileLogger -Path "$HOME/Logs/stepper.log" -Rotation Daily -FileFormat Cmtrace -Encoding UTF8BOM
+```
 - Gérer les niveaux de sévérité (`Info`, `Success`, `Warning`, `Error`, `Debug`, `Verbose`).
 - Prendre en compte l'indentation pour l'affichage ou la structuration du log.
 
@@ -209,11 +231,10 @@ $global:StepManagerLogger = { param($Component, $Message, $Severity, $IndentLeve
 }
 ```
 
-Si aucun logger n'est défini, StepManager utilise automatiquement son affichage console intégré.
+Si aucun logger n'est défini, itfabrik.stepper utilise automatiquement son affichage console intégré.
 
 ---
 
 ## Licence
 
 Apache-2.0 — voir `LICENSE`.
-

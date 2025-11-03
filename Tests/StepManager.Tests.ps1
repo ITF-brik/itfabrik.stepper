@@ -1,17 +1,17 @@
 $ErrorActionPreference = 'Stop'
 
 # Import the module from the repo root
-$modulePath = Join-Path (Split-Path $PSScriptRoot -Parent) 'StepManager.psd1'
+$modulePath = Join-Path (Split-Path $PSScriptRoot -Parent) 'itfabrik.stepper.psd1'
 Import-Module $modulePath -Force
 
-Describe 'StepManager' {
+Describe 'itfabrik.stepper' {
     BeforeEach {
         # Ensure clean state between tests
         try { while (Get-CurrentStep) { Complete-Step } } catch { }
     }
 
     It 'exports only Invoke-Step' {
-        $cmds = Get-Command -Module StepManager | Select-Object -ExpandProperty Name
+        $cmds = Get-Command -Module itfabrik.stepper | Select-Object -ExpandProperty Name
         $cmds | Should -Be @('Invoke-Step', 'Write-Log')
     }
 
@@ -124,4 +124,3 @@ Describe 'StepManager' {
         { Invoke-Step -Name 'Err' -ContinueOnError -ScriptBlock { throw 'x' } } | Should -Not -Throw
     }
 }
-

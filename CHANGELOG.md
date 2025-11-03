@@ -11,7 +11,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ### Added
 - Roadmap.md: idées pour vNext (API logging via flux PS, formalisme de messages configurable, robustesse multi-runspace, i18n/UTF‑8, vues objets, CI multi‑plateforme).
 - Objet Step: propriété `Duration` (TimeSpan) et méthode `ToString()` pour un rendu lisible.
-- Fichier de formatage `StepManager.format.ps1xml` pour un affichage tabulaire par défaut (Name, Status, Level, Duration, Detail).
+- Fichier de formatage `itfabrik.stepper.format.ps1xml` pour un affichage tabulaire par défaut (Name, Status, Level, Duration, Detail).
 - `.editorconfig` pour standardiser encodage UTF‑8, EOL LF et indentation.
 
 ### Changed
@@ -46,4 +46,3 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - Initial public version of StepManager
 - Core command `Invoke-Step` with nested steps, logging, error handling
 - Private helpers, classes, and tests (Pester)
-

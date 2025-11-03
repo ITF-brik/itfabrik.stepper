@@ -14,7 +14,7 @@ function Write-Log {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)] [string]$Message,
-        [Parameter(Mandatory)] [ValidateSet('Info','Success','Warning','Error','Debug','Verbose')] [string]$Severity
+        [Parameter(Mandatory=$false)] [ValidateSet('Info','Success','Warning','Error','Debug','Verbose')] [string]$Severity = 'Info'
     )
     
     try {

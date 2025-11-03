@@ -24,7 +24,6 @@ Closes #
 ## Checklist
 - [ ] Tests Pester OK (`Invoke-Pester -Path 'Tests'`)
 - [ ] Aucune erreur PSScriptAnalyzer
-- [ ] `ModuleVersion` mise à jour dans `StepManager.psd1` si nécessaire
+- [ ] `ModuleVersion` mise à jour dans `itfabrik.stepper.psd1` si nécessaire
 - [ ] `CHANGELOG.md` mis à jour
 - [ ] Documentation/README mis à jour si nécessaire
-
