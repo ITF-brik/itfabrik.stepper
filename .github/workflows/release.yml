@@ -22,7 +22,7 @@ jobs:
         run: |
           $version = '${{ github.ref_name }}'
           $zipName = "ITFabrik.Stepper-$version.zip"
-          $paths = @('ITFabrik.Stepper.psd1','ITFabrik.Stepper.psm1','Public','Private','README.md','LICENSE')
+          $paths$paths = @('ITFabrik.Stepper.psd1','ITFabrik.Stepper.psm1','ITFabrik.Stepper.format.ps1xml','Public','Private','README.md','LICENSE')
           Compress-Archive -Path $paths -DestinationPath $zipName -Force
           echo "zip=$zipName" >> $env:GITHUB_OUTPUT
 
@@ -71,3 +71,4 @@ jobs:
         if: ${{ env.PSGALLERY_API_KEY != '' }}
         run: |
           Publish-PSResource -Path . -Repository PSGallery -ApiKey $env:PSGALLERY_API_KEY -Verbose
+
