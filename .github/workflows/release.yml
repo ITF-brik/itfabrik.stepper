@@ -22,7 +22,7 @@ jobs:
         run: |
           $version = '${{ github.ref_name }}'
           $zipName = "ITFabrik.Stepper-$version.zip"
-          $paths$paths = @('ITFabrik.Stepper.psd1','ITFabrik.Stepper.psm1','ITFabrik.Stepper.format.ps1xml','Public','Private','README.md','LICENSE')
+          $paths = @('ITFabrik.Stepper.psd1','ITFabrik.Stepper.psm1','ITFabrik.Stepper.format.ps1xml','Public','Private','README.md','LICENSE')
           Compress-Archive -Path $paths -DestinationPath $zipName -Force
           echo "zip=$zipName" >> $env:GITHUB_OUTPUT
 

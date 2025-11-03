@@ -1,41 +1,41 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
-<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="20" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2025-11-03" time="11:51:47">
-  <environment cwd="C:\Developpement\Scripting\Modules\ITfabrik.Stepper" clr-version="9.0.10" machine-name="ITFABRIK-612" nunit-version="2.5.8.0" user-domain="AzureAD" os-version="10.0.26200" user="RégisLainé" platform="Microsoft Windows 11 Business|C:\WINDOWS|\Device\Harddisk0\Partition3" />
+<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="20" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2025-11-03" time="14:17:23">
+  <environment platform="Microsoft Windows 11 Business|C:\WINDOWS|\Device\Harddisk0\Partition3" user="RégisLainé" cwd="C:\Developpement\Scripting\Modules\ITfabrik.Stepper" clr-version="9.0.10" nunit-version="2.5.8.0" machine-name="ITFABRIK-612" os-version="10.0.26200" user-domain="AzureAD" />
   <culture-info current-culture="fr-FR" current-uiculture="fr-FR" />
-  <test-suite type="TestFixture" name="Pester" executed="True" result="Success" success="True" time="3.8453" asserts="0" description="Pester">
+  <test-suite type="TestFixture" name="Pester" executed="True" result="Success" success="True" time="3.3546" asserts="0" description="Pester">
     <results>
-      <test-suite type="TestFixture" name="C:\Developpement\Scripting\Modules\ITfabrik.Stepper\Tests\Logging.Tests.ps1" executed="True" result="Success" success="True" time="1.7153" asserts="0" description="C:\Developpement\Scripting\Modules\ITfabrik.Stepper\Tests\Logging.Tests.ps1">
+      <test-suite type="TestFixture" name="C:\Developpement\Scripting\Modules\ITfabrik.Stepper\Tests\Logging.Tests.ps1" executed="True" result="Success" success="True" time="1.2242" asserts="0" description="C:\Developpement\Scripting\Modules\ITfabrik.Stepper\Tests\Logging.Tests.ps1">
         <results>
-          <test-suite type="TestFixture" name="Logging" executed="True" result="Success" success="True" time="0.8084" asserts="0" description="Logging">
+          <test-suite type="TestFixture" name="Logging" executed="True" result="Success" success="True" time="0.8067" asserts="0" description="Logging">
             <results>
-              <test-case description="affiche un message avec Write-StepMessage" name="Logging.affiche un message avec Write-StepMessage" time="0.2255" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="utilise Write-Log (fallback console)" name="Logging.utilise Write-Log (fallback console)" time="0.1169" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="utilise un logger personnalisé si défini" name="Logging.utilise un logger personnalisé si défini" time="0.0556" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="log lors de la création d'une étape" name="Logging.log lors de la création d'une étape" time="0.107" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="log une erreur via Set-Step" name="Logging.log une erreur via Set-Step" time="0.1284" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="affiche un message avec Write-StepMessage" name="Logging.affiche un message avec Write-StepMessage" time="0.2215" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="utilise Write-Log (fallback console)" name="Logging.utilise Write-Log (fallback console)" time="0.1212" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="utilise un logger personnalisé si défini" name="Logging.utilise un logger personnalisé si défini" time="0.0555" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="log lors de la création d'une étape" name="Logging.log lors de la création d'une étape" time="0.1068" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="log une erreur via Set-Step" name="Logging.log une erreur via Set-Step" time="0.1219" asserts="0" success="True" result="Success" executed="True" />
             </results>
           </test-suite>
         </results>
       </test-suite>
-      <test-suite type="TestFixture" name="C:\Developpement\Scripting\Modules\ITfabrik.Stepper\Tests\StepManager.Tests.ps1" executed="True" result="Success" success="True" time="2.1301" asserts="0" description="C:\Developpement\Scripting\Modules\ITfabrik.Stepper\Tests\StepManager.Tests.ps1">
+      <test-suite type="TestFixture" name="C:\Developpement\Scripting\Modules\ITfabrik.Stepper\Tests\Stepper.Tests.ps1" executed="True" result="Success" success="True" time="2.1303" asserts="0" description="C:\Developpement\Scripting\Modules\ITfabrik.Stepper\Tests\Stepper.Tests.ps1">
         <results>
-          <test-suite type="TestFixture" name="itfabrik.stepper" executed="True" result="Success" success="True" time="2.0287" asserts="0" description="itfabrik.stepper">
+          <test-suite type="TestFixture" name="ITFabrik.Stepper" executed="True" result="Success" success="True" time="2.0244" asserts="0" description="ITFabrik.Stepper">
             <results>
-              <test-case description="exports only Invoke-Step" name="itfabrik.stepper.exports only Invoke-Step" time="0.0592" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="returns a step with all statuses" name="itfabrik.stepper.returns a step with all statuses" time="0.1874" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="handles deep nesting (3+ levels)" name="itfabrik.stepper.handles deep nesting (3+ levels)" time="0.2243" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="handles error in nested step with ContinueOnError" name="itfabrik.stepper.handles error in nested step with ContinueOnError" time="0.1908" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="returns all steps in correct order (children then parent)" name="itfabrik.stepper.returns all steps in correct order (children then parent)" time="0.1842" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="sets Detail property on error" name="itfabrik.stepper.sets Detail property on error" time="0.1269" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="sets StartTime and EndTime" name="itfabrik.stepper.sets StartTime and EndTime" time="0.1301" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="returns distinct Step objects in a foreach loop" name="itfabrik.stepper.returns distinct Step objects in a foreach loop" time="0.1753" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="throws on missing ScriptBlock" name="itfabrik.stepper.throws on missing ScriptBlock" time="0.0667" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="throws on empty Name" name="itfabrik.stepper.throws on empty Name" time="0.0501" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="returns a step for simple Invoke-Step" name="itfabrik.stepper.returns a step for simple Invoke-Step" time="0.0849" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="nests via Invoke-Step and returns both steps" name="itfabrik.stepper.nests via Invoke-Step and returns both steps" time="0.1337" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="propagates error status on failure with ContinueOnError" name="itfabrik.stepper.propagates error status on failure with ContinueOnError" time="0.1468" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="Invoke-Step throws when ContinueOnError is false" name="itfabrik.stepper.Invoke-Step throws when ContinueOnError is false" time="0.1355" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="Invoke-Step does not throw when ContinueOnError is true" name="itfabrik.stepper.Invoke-Step does not throw when ContinueOnError is true" time="0.1225" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="exports only Invoke-Step" name="ITFabrik.Stepper.exports only Invoke-Step" time="0.0529" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="returns a step with all statuses" name="ITFabrik.Stepper.returns a step with all statuses" time="0.1753" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="handles deep nesting (3+ levels)" name="ITFabrik.Stepper.handles deep nesting (3+ levels)" time="0.2129" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="handles error in nested step with ContinueOnError" name="ITFabrik.Stepper.handles error in nested step with ContinueOnError" time="0.2332" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="returns all steps in correct order (children then parent)" name="ITFabrik.Stepper.returns all steps in correct order (children then parent)" time="0.1875" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="sets Detail property on error" name="ITFabrik.Stepper.sets Detail property on error" time="0.141" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="sets StartTime and EndTime" name="ITFabrik.Stepper.sets StartTime and EndTime" time="0.1235" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="returns distinct Step objects in a foreach loop" name="ITFabrik.Stepper.returns distinct Step objects in a foreach loop" time="0.1785" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="throws on missing ScriptBlock" name="ITFabrik.Stepper.throws on missing ScriptBlock" time="0.0654" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="throws on empty Name" name="ITFabrik.Stepper.throws on empty Name" time="0.0496" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="returns a step for simple Invoke-Step" name="ITFabrik.Stepper.returns a step for simple Invoke-Step" time="0.085" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="nests via Invoke-Step and returns both steps" name="ITFabrik.Stepper.nests via Invoke-Step and returns both steps" time="0.1236" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="propagates error status on failure with ContinueOnError" name="ITFabrik.Stepper.propagates error status on failure with ContinueOnError" time="0.1385" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Invoke-Step throws when ContinueOnError is false" name="ITFabrik.Stepper.Invoke-Step throws when ContinueOnError is false" time="0.1252" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Invoke-Step does not throw when ContinueOnError is true" name="ITFabrik.Stepper.Invoke-Step does not throw when ContinueOnError is true" time="0.1253" asserts="0" success="True" result="Success" executed="True" />
             </results>
           </test-suite>
         </results>
