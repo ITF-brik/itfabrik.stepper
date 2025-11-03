@@ -1,5 +1,8 @@
 # itfabrik.stepper
 
+## Documentation
+- Vue d’ensemble et guides: `docs/index.md`
+
 [![CI](https://github.com/ITF-brik/itfabrik.stepper/actions/workflows/ci.yml/badge.svg)](https://github.com/ITF-brik/itfabrik.stepper/actions/workflows/ci.yml)
 [![PS Gallery Version](https://img.shields.io/powershellgallery/v/itfabrik.stepper.svg?style=flat)](https://www.powershellgallery.com/packages/itfabrik.stepper)
 [![PS Gallery Downloads](https://img.shields.io/powershellgallery/dt/itfabrik.stepper.svg?style=flat)](https://www.powershellgallery.com/packages/itfabrik.stepper)
@@ -199,9 +202,45 @@ Spécifications à respecter pour un logger externe:
 - Accepter les 4 paramètres ci-dessus, dans l'ordre.
 - Ne pas interrompre l'exécution (pas d'exception non gérée).
 
+## Couplage avec itfabrik.Logger
+
+Pour déporter la journalisation vers un module dédié, vous pouvez coupler itfabrik.stepper avec itfabrik.Logger. Le principe: itfabrik.Logger enregistre un dispatcher dans `$StepManagerLogger`, et stepper s’appuie dessus pour émettre les messages.
+
+Recommandation: initialiser les modules et la configuration logger en tout début de script (bloc `Begin {}`).
+
+```powershell
+Begin {
+  # 1) Import des modules
+  Import-Module itfabrik.stepper -Force
+  Import-Module itfabrik.Logger -Force
+
+  # 2) Initialiser le service et déclarer les sinks
+  Initialize-LoggerService -Reset
+
+  # 2a) Sink Console (format par défaut)
+  Register-LoggerSink -Type Console -Format Default
+
+  # 2b) Sink Fichier au format CMTrace (rotation quotidienne, UTF8BOM)
+  $logPath = Join-Path $HOME 'Logs/stepper.cmtrace.log'
+  Register-LoggerSink -Type File -Path $logPath -FileFormat Cmtrace -Rotation Daily -Encoding UTF8BOM -MaxRolls 7
+}
+
+Process {
+  # Vos étapes et journaux utilisent désormais le logger externe
+  Invoke-Step -Name 'Exemple' -ScriptBlock {
+    Write-Log -Message 'Démarrage' -Severity Info
+    # ...
+  }
+}
+```
+
+Raccourcis possibles selon votre version de itfabrik.Logger:
+- `Initialize-LoggerConsole`
+- `Initialize-LoggerFile -Path <chemin> -FileFormat Cmtrace -Rotation Daily -Encoding UTF8BOM`
+
 ---
 
-## Initialisation rapide — Logger fichier
+## Initialisation rapide - Logger fichier
 
 - Minimal (sans rotation):
 
@@ -213,9 +252,74 @@ $global:StepManagerLogger = {
 }
 ```
 
-- Avec rotation (taille/quotidienne): copiez la fonction `Set-StepperFileLogger` depuis `docs/sinks/file.md`, puis:
+- Avec rotation (taille/quotidienne): utilisez la fonction suivante, puis appelez-la:
 
 ```powershell
+function Set-StepperFileLogger {
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory)][string]$Path,
+    [ValidateSet('None','Size','Daily')][string]$Rotation = 'None',
+    [int]$MaxSizeMB = 5,
+    [int]$MaxRolls = 3,
+    [ValidateSet('Default','Cmtrace')][string]$FileFormat = 'Default',
+    [ValidateSet('UTF8','UTF8BOM','Unicode')][string]$Encoding = 'UTF8'
+  )
+
+  $global:StepperLoggerConfig = [pscustomobject]@{
+    Path      = (Resolve-Path -LiteralPath $Path).Path 2>$null -or $Path
+    Rotation  = $Rotation
+    MaxSizeMB = [math]::Max(1,$MaxSizeMB)
+    MaxRolls  = [math]::Max(1,$MaxRolls)
+    FileFormat= $FileFormat
+    Encoding  = $Encoding
+  }
+
+  $global:StepManagerLogger = {
+    param($Component,$Message,$Severity,$IndentLevel)
+    $cfg = $global:StepperLoggerConfig
+    if (-not $cfg) { return }
+
+    $path = $cfg.Path
+    $dir  = Split-Path -Parent $path
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+
+    if ($cfg.Rotation -eq 'Daily') {
+      $base = [IO.Path]::GetFileNameWithoutExtension($path)
+      $ext  = [IO.Path]::GetExtension($path)
+      $date = (Get-Date).ToString('yyyy-MM-dd')
+      $path = Join-Path $dir ("$base-$date$ext")
+    }
+
+    if ($cfg.Rotation -eq 'Size' -and (Test-Path $path)) {
+      try {
+        $lenMB = ([double](Get-Item $path).Length) / 1MB
+        if ($lenMB -ge $cfg.MaxSizeMB) {
+          for ($i = $cfg.MaxRolls - 1; $i -ge 1; $i--) {
+            $src = "$path.$i"
+            $dst = "$path." + ($i + 1)
+            if (Test-Path $src) { Move-Item -Force -ErrorAction SilentlyContinue -Path $src -Destination $dst }
+          }
+          if (Test-Path $path) { Move-Item -Force -ErrorAction SilentlyContinue -Path $path -Destination "$path.1" }
+        }
+      } catch { }
+    }
+
+    if ($cfg.FileFormat -eq 'Cmtrace') {
+      $type = switch ($Severity) { 'Error' {3} 'Warning' {2} default {1} }
+      $ts = Get-Date
+      $line = "<![LOG[$Message]LOG]!><time=\"$($ts.ToString('HH:mm:ss.ffffff'))\" date=\"$($ts.ToString('M-d-yyyy'))\" component=\"$Component\" context=\"User\" type=\"$type\" thread=\"$PID\" file=\"\">"
+    } else {
+      $sev = $Severity.PadLeft(10)
+      $indent = ' ' * ($IndentLevel * 2)
+      $line = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [$sev] [$Component] $indent$Message"
+    }
+
+    $enc = switch ($cfg.Encoding) { 'UTF8BOM' {'utf8BOM'} 'Unicode' {'unicode'} default {'utf8'} }
+    Add-Content -Path $path -Value $line -Encoding $enc
+  }
+}
+
 Set-StepperFileLogger -Path "$HOME/Logs/stepper.log" -Rotation Size -MaxSizeMB 5 -MaxRolls 3
 # ou
 Set-StepperFileLogger -Path "$HOME/Logs/stepper.log" -Rotation Daily -FileFormat Cmtrace -Encoding UTF8BOM
