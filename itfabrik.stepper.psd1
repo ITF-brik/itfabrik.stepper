@@ -1,6 +1,6 @@
 @{
     RootModule        = 'itfabrik.stepper.psm1'
-    ModuleVersion     = '2025.10.2.0'
+    ModuleVersion     = '1.0.0'
     GUID              = 'b3a9d3b4-7a2d-4a0b-9f8e-2c3b6f7f8c2e'
     Author            = 'IT FABRIK'
     CompanyName       = 'IT FABRIK'
