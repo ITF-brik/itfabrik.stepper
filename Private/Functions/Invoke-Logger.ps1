@@ -35,10 +35,11 @@ function Invoke-Logger {
     # Gestion du niveau Debug et Verbose
     if ($Severity -eq 'Debug') { if ($DebugPreference -eq 'SilentlyContinue') { return } }
     if ($Severity -eq 'Verbose') { if ($VerbosePreference -eq 'SilentlyContinue') { return } }
-    $logger = Get-StepManagerLogger
-    if ($null -eq $logger) {
-        Write-StepMessage -Severity $Severity -Message ("[$Component] $Message") -IndentLevel $finalIndent
-    } else {
-        & $logger $Component $Message $Severity $finalIndent
-    }
+    Write-StepLogEntry -Entry ([pscustomobject]@{
+            Source = 'Internal'
+            Component = $Component
+            Message = $Message
+            Severity = $Severity
+            IndentLevel = $finalIndent
+        })
 }

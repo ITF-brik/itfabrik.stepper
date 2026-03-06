@@ -1,5 +1,6 @@
 # Initialisation du flag d'exécution interne d'un Step
 if ($null -eq $script:InsideStep) { $script:InsideStep = $false }
+if ($null -eq $script:StepLogCollector) { $script:StepLogCollector = $null }
 
 <#
 .SYNOPSIS
@@ -31,6 +32,48 @@ function Get-StepManagerLogger {
     }
 
     return $null
+}
+
+function ConvertTo-StepLogEntry {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$Entry
+    )
+
+    return [pscustomobject]@{
+        Source = [string]$Entry.Source
+        Component = [string]$Entry.Component
+        Message = [string]$Entry.Message
+        Severity = [string]$Entry.Severity
+        IndentLevel = [int]$Entry.IndentLevel
+        StepName = if ($Entry.PSObject.Properties.Match('StepName').Count -gt 0) { [string]$Entry.StepName } else { '' }
+        ForegroundColor = if ($Entry.PSObject.Properties.Match('ForegroundColor').Count -gt 0) { [string]$Entry.ForegroundColor } else { '' }
+    }
+}
+
+function Write-StepLogEntry {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$Entry
+    )
+
+    $normalizedEntry = ConvertTo-StepLogEntry -Entry $Entry
+    $collector = $script:StepLogCollector
+    if ($null -ne $collector) {
+        & $collector $normalizedEntry
+        return
+    }
+
+    $logger = Get-StepManagerLogger
+    if ($null -eq $logger) {
+        if ($normalizedEntry.Source -eq 'User') {
+            Write-StepMessage -Severity $normalizedEntry.Severity -Message $normalizedEntry.Message -IndentLevel $normalizedEntry.IndentLevel -StepName $normalizedEntry.StepName -ForegroundColor $normalizedEntry.ForegroundColor
+        } else {
+            Write-StepMessage -Severity $normalizedEntry.Severity -Message ("[{0}] {1}" -f $normalizedEntry.Component, $normalizedEntry.Message) -IndentLevel $normalizedEntry.IndentLevel
+        }
+    } else {
+        & $logger $normalizedEntry.Component $normalizedEntry.Message $normalizedEntry.Severity $normalizedEntry.IndentLevel
+    }
 }
 
 function Write-StepMessage {

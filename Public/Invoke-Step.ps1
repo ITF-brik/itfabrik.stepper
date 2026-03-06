@@ -256,11 +256,22 @@ function Invoke-StepForEachWorker {
         Set-Variable -Name $entry.Key -Value $entry.Value -Scope Local
     }
 
-    $userScript = [scriptblock]::Create($ScriptText)
-    $currentItem = $Item
-    $currentIndex = $Index
-    $result = Invoke-StepInternal -Name $StepName -ContinueOnError:$ContinueOnError -ScriptBlock {
-        & $userScript $currentItem $currentIndex
+    $logEntries = [System.Collections.Generic.List[object]]::new()
+    $previousCollector = $script:StepLogCollector
+    $script:StepLogCollector = {
+        param($entry)
+        [void]$logEntries.Add((ConvertTo-StepLogEntry -Entry $entry))
+    }
+    try {
+        $userScript = [scriptblock]::Create($ScriptText)
+        $currentItem = $Item
+        $currentIndex = $Index
+        $result = Invoke-StepInternal -Name $StepName -ContinueOnError:$ContinueOnError -ScriptBlock {
+            & $userScript $currentItem $currentIndex
+        }
+    }
+    finally {
+        $script:StepLogCollector = $previousCollector
     }
 
     return [pscustomobject]@{
@@ -269,6 +280,7 @@ function Invoke-StepForEachWorker {
         ShouldThrow = $result.ShouldThrow
         ErrorMessage = if ($null -ne $result.Exception) { $result.Exception.Exception.Message } else { $null }
         StepData = ConvertTo-InvokeStepData -Step $result.Step
+        LogEntries = @($logEntries.ToArray())
     }
 }
 
@@ -417,6 +429,9 @@ function Invoke-StepForEachParallelInternal {
     foreach ($result in $orderedResults) {
         if ($null -ne $result.StepData) {
             [void](ConvertFrom-InvokeStepData -StepData $result.StepData -Parent $parentStep)
+        }
+        foreach ($logEntry in @($result.LogEntries)) {
+            Write-StepLogEntry -Entry $logEntry
         }
         if ($result.ShouldThrow -and [string]::IsNullOrWhiteSpace($firstFailure)) {
             $firstFailure = $result.ErrorMessage

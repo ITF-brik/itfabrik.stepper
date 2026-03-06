@@ -32,16 +32,19 @@ function Write-Log {
         $ForegroundColor = 'DarkGray'
     }
     
-    $logger = Get-StepManagerLogger
-    if ($null -eq $logger) {
-        # Affiche uniquement le StepName pour éviter la duplication [Step][Component]
-        Write-StepMessage -Severity $Severity -Message $Message -IndentLevel $finalIndent -StepName $($currentStep.Name) -ForegroundColor $ForegroundColor
+    $component = if ($null -ne $currentStep -and -not [string]::IsNullOrWhiteSpace($currentStep.Name)) {
+        $currentStep.Name
     } else {
-        $component = if ($null -ne $currentStep -and -not [string]::IsNullOrWhiteSpace($currentStep.Name)) {
-            $currentStep.Name
-        } else {
-            'StepManager'
-        }
-        & $logger $component $Message $Severity $finalIndent
+        'StepManager'
     }
+
+    Write-StepLogEntry -Entry ([pscustomobject]@{
+            Source = 'User'
+            Component = $component
+            Message = $Message
+            Severity = $Severity
+            IndentLevel = $finalIndent
+            StepName = if ($null -ne $currentStep) { $currentStep.Name } else { '' }
+            ForegroundColor = $ForegroundColor
+        })
 }

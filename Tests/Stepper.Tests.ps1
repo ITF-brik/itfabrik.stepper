@@ -7,7 +7,7 @@ Import-Module $modulePath -Force
 Describe 'ITFabrik.Stepper' {
     BeforeEach {
         # Ensure clean state between tests
-        try { while (Get-CurrentStep) { Complete-Step } } catch { }
+        try { while (Get-CurrentStep) { Complete-Step } } catch { Write-Verbose 'Step stack cleanup skipped.' }
     }
 
     It 'exports only Invoke-Step' {
@@ -136,6 +136,7 @@ Describe 'ITFabrik.Stepper' {
     It 'creates one child step per input item in collection mode' {
         $parent = Invoke-Step -Name 'Batch' -InputObject @('alpha', 'beta', 'gamma') -PassThru -ScriptBlock {
             param($item, $index)
+            [void]$item
             Start-Sleep -Milliseconds (5 + $index)
         }
 
@@ -167,6 +168,7 @@ Describe 'ITFabrik.Stepper' {
     It 'continues processing remaining items when ContinueOnError is enabled in collection mode' {
         $parent = Invoke-Step -Name 'Batch continue' -InputObject @(1, 2, 3) -ContinueOnError -PassThru -ScriptBlock {
             param($item, $index)
+            [void]$item
             if ($index -eq 1) {
                 throw 'boom 2'
             }
@@ -182,6 +184,7 @@ Describe 'ITFabrik.Stepper' {
         {
             Invoke-Step -Name 'Batch stop' -InputObject @(1, 2, 3) -ScriptBlock {
                 param($item, $index)
+                [void]$item
                 if ($index -eq 1) {
                     throw 'boom stop'
                 }
@@ -231,5 +234,32 @@ Describe 'ITFabrik.Stepper' {
         @($parent.Children | ForEach-Object Status) | Should -Be @('Success', 'Error', 'Success')
         $parent.Children[1].Detail | Should -Be 'parallel boom'
     }
-}
 
+    It 'replays worker logs through the caller logger in input order when running in parallel' {
+        $events = [System.Collections.Generic.List[object]]::new()
+        $customLogger = {
+            param($component, $message, $severity, $indent)
+            [void]$events.Add([pscustomobject]@{
+                    Component = $component
+                    Message = $message
+                    Severity = $severity
+                    Indent = $indent
+                })
+        }
+
+        Set-Variable -Name StepManagerLogger -Value $customLogger -Scope Global
+        try {
+            Invoke-Step -Name 'Parallel logs' -InputObject @('beta', 'alpha') -Parallel -ParallelThreshold 1 -ThrottleLimit 2 -PassThru -ScriptBlock {
+                param($item)
+                Write-Log -Message "User $item" -Severity Info
+            } | Out-Null
+        }
+        finally {
+            Remove-Variable -Name StepManagerLogger -Scope Global -ErrorAction SilentlyContinue
+        }
+
+        $userEvents = @($events | Where-Object { $_.Message -like 'User *' })
+        @($userEvents | ForEach-Object Component) | Should -Be @('Parallel logs [beta]', 'Parallel logs [alpha]')
+        @($userEvents | ForEach-Object Message) | Should -Be @('User beta', 'User alpha')
+    }
+}

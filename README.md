@@ -161,8 +161,10 @@ $batch = Invoke-Step -Name 'Controle des serveurs' `
 Points a retenir:
 - Sans `-Parallel`, l'execution reste sequentielle.
 - `-ParallelThreshold` evite d'activer le parallelisme pour de petites listes.
+- `-ThrottleLimit` fixe le nombre maximum d'elements traites en parallele en meme temps.
 - En PowerShell 7, le module utilise `ForEach-Object -Parallel`.
 - En Windows PowerShell 5.1, le module utilise `Start-Job`.
+- Les logs emis par les workers paralleles sont rejoues dans l'ordre des elements pour garder une sortie stable.
 - Le `ScriptBlock` recoit toujours `param($item, $index)`.
 
 ### Gestion d'erreur
