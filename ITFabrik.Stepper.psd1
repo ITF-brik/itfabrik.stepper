@@ -20,10 +20,9 @@
             ProjectUri   = 'https://github.com/ITF-brik/itfabrik.stepper'
             IconUri      = 'https://raw.githubusercontent.com/ITF-brik/itfabrik.stepper/main/Media/icon.png'
             ReleaseNotes = 'Voir CHANGELOG.md et la page Releases sur GitHub.'
-            Prerelease   = 'alpha1'
+            Prerelease   = $null
         }
     }
 }
-
 
 
