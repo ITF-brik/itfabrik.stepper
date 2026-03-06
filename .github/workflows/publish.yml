@@ -7,8 +7,15 @@ on:
         description: 'Release tag to validate (e.g. v1.0.7). Optional for manual runs.'
         required: false
         type: string
+      release_branch:
+        description: 'Cycle branch to close after successful publication (e.g. cycle/20260306-reorganisation-ci-cd).'
+        required: false
+        type: string
   release:
     types: [published]
+
+permissions:
+  contents: write
 
 jobs:
   publish:
@@ -97,3 +104,56 @@ jobs:
         run: |
           if (-not $env:PSGALLERY_API_KEY) { throw 'Missing PSGALLERY_API_KEY secret' }
           ./Scripts/Publish-PSGallery.ps1 -ApiKey $env:PSGALLERY_API_KEY -ModulePath 'dist/ITFabrik.Stepper'
+
+      - name: Delete cycle branch after successful publish
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_BRANCH: ${{ github.event.release.target_commitish }}
+          INPUT_RELEASE_BRANCH: ${{ github.event.inputs.release_branch }}
+        run: |
+          $branch = if (-not [string]::IsNullOrWhiteSpace($env:INPUT_RELEASE_BRANCH)) {
+            $env:INPUT_RELEASE_BRANCH
+          } elseif (-not [string]::IsNullOrWhiteSpace($env:RELEASE_BRANCH)) {
+            $env:RELEASE_BRANCH
+          } else {
+            ''
+          }
+
+          if ([string]::IsNullOrWhiteSpace($branch)) {
+            Write-Host 'No release branch resolved. Skipping branch deletion.'
+            exit 0
+          }
+          if ($branch -in @('main', 'master')) {
+            Write-Host "Protected branch '$branch'. Skipping branch deletion."
+            exit 0
+          }
+          if ($branch -match '^[0-9a-fA-F]{7,40}$') {
+            Write-Host "Release target '$branch' looks like a commit SHA. Skipping branch deletion."
+            exit 0
+          }
+          if ($branch -notmatch '^cycle\/') {
+            Write-Host "Branch '$branch' is not a cycle branch. Skipping branch deletion."
+            exit 0
+          }
+
+          $encodedRef = [System.Uri]::EscapeDataString("heads/$branch")
+          $uri = "https://api.github.com/repos/$($env:REPOSITORY)/git/refs/$encodedRef"
+          $headers = @{
+            Authorization = "Bearer $env:GITHUB_TOKEN"
+            Accept = 'application/vnd.github+json'
+            'X-GitHub-Api-Version' = '2022-11-28'
+          }
+
+          try {
+            Invoke-RestMethod -Method Delete -Uri $uri -Headers $headers | Out-Null
+            Write-Host "Deleted remote cycle branch: $branch" -ForegroundColor Green
+          } catch {
+            $statusCode = $_.Exception.Response.StatusCode.value__
+            if ($statusCode -in 404, 422) {
+              Write-Host "Remote cycle branch '$branch' was already absent or not deletable. Skipping."
+            } else {
+              throw
+            }
+          }

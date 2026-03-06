@@ -5,5 +5,6 @@ Bienvenue. Cette documentation couvre l'usage du module itfabrik.stepper, ses po
 - Démarrage et configuration: `docs/configuration.md`
 - Sortie console et formatage: `docs/sinks/console.md`
 - Dépannage: `docs/troubleshooting.md`
+- Cycles de développement: `docs/development-cycle.md`
 - Mise en place GitHub et publication: `docs/github-setup.md`, `docs/release-procedure.md`
 

@@ -46,7 +46,7 @@ Quatre workflows existent dans `.github/workflows`:
 - `.github/workflows/ci.yml` - execute ScriptAnalyzer et les tests Pester sur `push`, `pull_request` et `workflow_dispatch`.
 - `.github/workflows/pester-coverage.yml` - execute Pester avec gate de couverture.
 - `.github/workflows/check-tag.yml` - verifie qu'un tag `vX.Y.Z` correspond a `ModuleVersion`.
-- `.github/workflows/publish.yml` - declenche manuellement ou lors d'une release publiee, construit l'artifact `dist/ITFabrik.Stepper` puis publie sur PowerShell Gallery.
+- `.github/workflows/publish.yml` - declenche manuellement ou lors d'une release publiee, construit l'artifact `dist/ITFabrik.Stepper`, publie sur PowerShell Gallery et peut supprimer la branche `cycle/*` associee apres succes.
 
 Permissions Actions (par defaut suffisantes):
 - Settings ^ Actions ^ General ^ Workflow permissions ^ Read repository contents
@@ -61,6 +61,10 @@ Le workflow de publication requiert `PSGALLERY_API_KEY`.
 ## 6) Publier une nouvelle version
 
 Source de verite recommandee = manifeste:
+1. Creer d'abord la branche de cycle si le travail n'est pas deja isole:
+   ```powershell
+   ./Scripts/New-DevelopmentCycle.ps1 -Type '<Type>' -Objective '<Objectif>' -Push
+   ```
 1. Mettre a jour `ModuleVersion` dans `ITFabrik.Stepper.psd1`.
 2. Commit & push:
    ```powershell
@@ -73,8 +77,8 @@ Source de verite recommandee = manifeste:
    ./Scripts/New-ReleaseTag.ps1 -Push
    ```
 4. Le workflow `.github/workflows/check-tag.yml` verifie automatiquement l'alignement tag/version.
-5. Creer ensuite la release GitHub en selectionnant ce tag.
-6. Le workflow `.github/workflows/publish.yml` publie sur PowerShell Gallery lors de `release: published`.
+5. Creer ensuite la release GitHub en selectionnant ce tag et en visant la branche `cycle/*` active si elle doit etre fermee automatiquement.
+6. Le workflow `.github/workflows/publish.yml` publie sur PowerShell Gallery lors de `release: published`, puis supprime la branche distante `cycle/*` si la publication reussit.
 
 ## 7) Bonnes pratiques
 - Proteger `main` (PRs et reviews) une fois le depot public.
@@ -83,9 +87,10 @@ Source de verite recommandee = manifeste:
 - Tests Pester: les fichiers dans `Tests/` sont lances par `.github/workflows/ci.yml`.
 
 References utiles:
+- Cycle de developpement: `docs/development-cycle.md`
 - CI: `.github/workflows/ci.yml`
 - Coverage: `.github/workflows/pester-coverage.yml`
 - Verification tag: `.github/workflows/check-tag.yml`
 - Publication: `.github/workflows/publish.yml`
-- Scripts: `Scripts/Build-Module.ps1`, `Scripts/Publish-PSGallery.ps1`, `Scripts/New-ReleaseTag.ps1`
+- Scripts: `Scripts/Build-Module.ps1`, `Scripts/Publish-PSGallery.ps1`, `Scripts/New-ReleaseTag.ps1`, `Scripts/New-DevelopmentCycle.ps1`, `Scripts/Close-DevelopmentCycle.ps1`
 - Manifeste module: `ITFabrik.Stepper.psd1`

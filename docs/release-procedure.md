@@ -7,6 +7,7 @@ Ce guide decrit pas a pas comment publier une nouvelle version du module ITFabri
 - Git installe et configure (remote `origin` pointe sur GitHub).
 - Tests Pester fonctionnels en local.
 - Choisir une version SemVer: `MAJOR.MINOR.PATCH` (ex: 1.2.3).
+- Si le cycle de travail n'est pas deja isole, creer une branche `cycle/*` avec `./Scripts/New-DevelopmentCycle.ps1`.
 
 ## 2) Valider localement
 - Lancer les tests:
@@ -60,7 +61,7 @@ Ce guide decrit pas a pas comment publier une nouvelle version du module ITFabri
 ## 5) Creer la release GitHub
 - Aller sur GitHub > Releases > Draft a new release.
 - Selectionner le tag cree `vX.Y.Z`.
-- Target branch: `main`.
+- Target branch: la branche `cycle/*` active si elle doit etre fermee automatiquement apres succes, sinon `main`.
 - Titre/notes: reprendre le resume du `CHANGELOG.md`.
 - Publier la release.
 
@@ -72,6 +73,7 @@ Ce guide decrit pas a pas comment publier une nouvelle version du module ITFabri
   - Verification stricte du contenu (`psd1`, `psm1`, `format.ps1xml`, `LICENSE`, `README.md`)
   - ScriptAnalyzer sur l'artifact build
   - Publication via `Scripts/Publish-PSGallery.ps1` (source: `dist/ITFabrik.Stepper`)
+  - Suppression de la branche distante `cycle/*` si la release a ete creee depuis cette branche ou si `release_branch` est fourni en `workflow_dispatch`
 
 ## 7) Verifier la publication
 - Installer la version publiee depuis PSGallery (depuis une session propre):
@@ -84,6 +86,7 @@ Ce guide decrit pas a pas comment publier une nouvelle version du module ITFabri
 ## 8) Bonnes pratiques
 - Respecter SemVer: PATCH = fix, MINOR = ajout non cassant, MAJOR = rupture.
 - Ne pas tagger manuellement a la main; preferer `New-ReleaseTag.ps1`.
+- Utiliser une branche `cycle/*` par cycle de developpement.
 - Proteger `main` (PR + review) si depot public.
 - Completer/tenir a jour `CHANGELOG.md`.
 
@@ -115,6 +118,8 @@ Ce guide decrit pas a pas comment publier une nouvelle version du module ITFabri
 
 ## Fichiers et commandes utiles
 - Manifeste: `ITFabrik.Stepper.psd1`
+- Script ouverture cycle: `Scripts/New-DevelopmentCycle.ps1`
+- Script fermeture locale: `Scripts/Close-DevelopmentCycle.ps1`
 - Script tag: `Scripts/New-ReleaseTag.ps1`
 - Workflows: `.github/workflows/ci.yml`, `.github/workflows/pester-coverage.yml`, `.github/workflows/check-tag.yml`, `.github/workflows/publish.yml`
 - Build artifact: `Scripts/Build-Module.ps1`, `dist/ITFabrik.Stepper/`
