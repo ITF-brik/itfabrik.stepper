@@ -6,6 +6,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+. (Join-Path $PSScriptRoot 'ModuleVersion.ps1')
+
 function Get-OrderedScriptFile {
     param(
         [Parameter(Mandatory)][string]$Path
@@ -89,6 +91,8 @@ Update-ModuleManifest -Path $distPsd1 -FileList @(
     'README.md'
 )
 
+$releaseInfo = Get-StepperReleaseVersionInfo -ManifestPath $distPsd1
+
 if (-not $SkipValidation) {
     Test-ModuleManifest -Path $distPsd1 | Out-Null
 
@@ -101,5 +105,6 @@ if (-not $SkipValidation) {
 
 $outputFiles = Get-ChildItem -LiteralPath $OutputRoot -File | Sort-Object Name
 Write-Output "Built module artifact at: $OutputRoot"
+Write-Output "Effective release version: $($releaseInfo.EffectiveVersion)"
 Write-Output 'Files:'
 $outputFiles | ForEach-Object { Write-Output (" - {0}" -f $_.Name) }

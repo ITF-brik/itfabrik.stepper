@@ -29,6 +29,9 @@ Ce document est la reference principale pour le flux de travail recurrent du pro
 - Mettre a jour :
   - `ITFabrik.Stepper.psd1`
   - `CHANGELOG.md`
+- Convention de version :
+  - stable : `ModuleVersion = '1.0.9'` et `PrivateData.PSData.Prerelease = $null`
+  - prerelease : `ModuleVersion = '1.0.9'` et `PrivateData.PSData.Prerelease = 'alpha1'`
 - Valider localement si necessaire :
   ```powershell
   ./Scripts/Build-Module.ps1
@@ -41,7 +44,11 @@ Ce document est la reference principale pour le flux de travail recurrent du pro
   ```powershell
   ./Scripts/New-ReleaseTag.ps1 -Push
   ```
+- Le tag genere est base sur la version effective :
+  - stable : `v1.0.9`
+  - prerelease : `v1.0.9-alpha1`
 - Creer ensuite la release GitHub sur ce tag.
+- Si la version est prerelease, marquer aussi la release GitHub comme prerelease.
 - Important :
   - choisir la branche `cycle/*` active comme `Target` si vous voulez qu'elle soit fermee automatiquement apres succes,
   - le workflow `.github/workflows/publish.yml` publie ensuite le module sur PowerShell Gallery.
