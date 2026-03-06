@@ -47,6 +47,8 @@ Import-Module .\ITFabrik.Stepper.psd1 -Force
 - Logging console et logger personnalisable
 - Fonction publique **Write-Log** pour journalisation utilisateur
 - Gestion d'erreur configurable (`ContinueOnError`)
+- Traitement natif d'une collection avec une sous-étape par élément
+- Parallélisation optionnelle compatible PowerShell 5.1 et PowerShell 7
 - Retour d'objets typés pour chaque étape
 
 ## Exemples d'utilisation
@@ -100,29 +102,68 @@ Invoke-Step -Name 'Installation' -ContinueOnError:$true -ScriptBlock {
 [2025-10-14 14:00:02] ✓   [Installation] Étape terminée : Installation
 ```
 
-### Boucle sur une liste d'éléments
+### Traitement d'une liste d'elements
 
 ```powershell
 $items = 'A','B','C'
-$steps = foreach ($item in $items) {
-    Invoke-Step -Name "Traitement $item" -ScriptBlock {
-        # Traitement spécifique à $item
-        "Traitement de $item terminé."
-    } -PassThru
+$batch = Invoke-Step -Name 'Traitement des elements' -InputObject $items -PassThru -ScriptBlock {
+    param($item, $index)
+
+    Invoke-Step -Name "Validation $index $item" -ScriptBlock {
+        Write-Log -Message "Traitement de $item" -Severity Info
+    }
 }
-# $steps contient la liste des objets Step pour chaque élément
+
+# $batch représente l'etape parente
+# $batch.Children contient une sous-etape par element:
+# - Traitement des elements [A]
+# - Traitement des elements [B]
+# - Traitement des elements [C]
 ```
 
 #### Exemple d'affichage console attendu
 
 ```text
-[2025-10-14 14:00:00] ℹ    [Traitement A] Démarrage de l'étape : Traitement A
-[2025-10-14 14:00:00] ✓   [Traitement A] Étape terminée : Traitement A
-[2025-10-14 14:00:01] ℹ    [Traitement B] Démarrage de l'étape : Traitement B
-[2025-10-14 14:00:01] ✓   [Traitement B] Étape terminée : Traitement B
-[2025-10-14 14:00:02] ℹ    [Traitement C] Démarrage de l'étape : Traitement C
-[2025-10-14 14:00:02] ✓   [Traitement C] Étape terminée : Traitement C
+[2025-10-14 14:00:00] ℹ    [Traitement des elements] Démarrage de l'étape : Traitement des elements
+[2025-10-14 14:00:00] ℹ      [Traitement des elements [A]] Démarrage de l'étape : Traitement des elements [A]
+[2025-10-14 14:00:00] ℹ        [Validation 0 A] Traitement de A
+[2025-10-14 14:00:00] ✓       [Traitement des elements [A]] Étape terminée : Traitement des elements [A]
+[2025-10-14 14:00:01] ℹ      [Traitement des elements [B]] Démarrage de l'étape : Traitement des elements [B]
+[2025-10-14 14:00:01] ℹ        [Validation 1 B] Traitement de B
+[2025-10-14 14:00:01] ✓       [Traitement des elements [B]] Étape terminée : Traitement des elements [B]
+[2025-10-14 14:00:02] ℹ      [Traitement des elements [C]] Démarrage de l'étape : Traitement des elements [C]
+[2025-10-14 14:00:02] ℹ        [Validation 2 C] Traitement de C
+[2025-10-14 14:00:02] ✓       [Traitement des elements [C]] Étape terminée : Traitement des elements [C]
+[2025-10-14 14:00:02] ✓   [Traitement des elements] Étape terminée : Traitement des elements
 ```
+
+### Traitement parallele d'une liste
+
+```powershell
+$servers = 'srv-01','srv-02','srv-03','srv-04'
+
+$batch = Invoke-Step -Name 'Controle des serveurs' `
+    -InputObject $servers `
+    -Parallel `
+    -ParallelThreshold 3 `
+    -ThrottleLimit 2 `
+    -PassThru `
+    -ScriptBlock {
+        param($server, $index)
+
+        Invoke-Step -Name "Ping $server" -ScriptBlock {
+            Write-Log -Message "Verification du serveur #$index : $server" -Severity Info
+            Start-Sleep -Milliseconds 200
+        }
+    }
+```
+
+Points a retenir:
+- Sans `-Parallel`, l'execution reste sequentielle.
+- `-ParallelThreshold` evite d'activer le parallelisme pour de petites listes.
+- En PowerShell 7, le module utilise `ForEach-Object -Parallel`.
+- En Windows PowerShell 5.1, le module utilise `Start-Job`.
+- Le `ScriptBlock` recoit toujours `param($item, $index)`.
 
 ### Gestion d'erreur
 
@@ -154,6 +195,7 @@ Invoke-Step -Name 'Exemple' -ContinueOnError:$false -ScriptBlock {
 ## Contrat de retour
 
 - `Invoke-Step` retourne l'objet `[Step]` pour l'étape invoquée si `-PassThru` est utilisé.
+- En mode collection, `-PassThru` retourne l'etape parente, et les sous-etapes sont disponibles dans `Children`.
 - Signature : `[OutputType('Step')]` sur `Invoke-Step`.
 - `Write-Log` n'a pas de retour, il journalise simplement.
 

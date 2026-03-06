@@ -132,5 +132,104 @@ Describe 'ITFabrik.Stepper' {
     It 'Invoke-Step does not throw when ContinueOnError is true' {
         { Invoke-Step -Name 'Err' -ContinueOnError -ScriptBlock { throw 'x' } } | Should -Not -Throw
     }
+
+    It 'creates one child step per input item in collection mode' {
+        $parent = Invoke-Step -Name 'Batch' -InputObject @('alpha', 'beta', 'gamma') -PassThru -ScriptBlock {
+            param($item, $index)
+            Start-Sleep -Milliseconds (5 + $index)
+        }
+
+        $parent.Name | Should -Be 'Batch'
+        $parent.Status | Should -Be 'Success'
+        $parent.Children.Count | Should -Be 3
+        @($parent.Children | ForEach-Object Name) | Should -Be @(
+            'Batch [alpha]',
+            'Batch [beta]',
+            'Batch [gamma]'
+        )
+        @($parent.Children | ForEach-Object Status) | Should -Be @('Success', 'Success', 'Success')
+    }
+
+    It 'passes the item and index to the collection script block' {
+        $parent = Invoke-Step -Name 'Batch args' -InputObject @('one', 'two') -PassThru -ScriptBlock {
+            param($item, $index)
+            Invoke-Step -Name "Args $index $item" -ScriptBlock { }
+        }
+
+        @($parent.Children | ForEach-Object {
+                $_.Children[0].Name
+            }) | Should -Be @(
+            'Args 0 one',
+            'Args 1 two'
+        )
+    }
+
+    It 'continues processing remaining items when ContinueOnError is enabled in collection mode' {
+        $parent = Invoke-Step -Name 'Batch continue' -InputObject @(1, 2, 3) -ContinueOnError -PassThru -ScriptBlock {
+            param($item, $index)
+            if ($index -eq 1) {
+                throw 'boom 2'
+            }
+        }
+
+        $parent.Status | Should -Be 'Success'
+        $parent.Children.Count | Should -Be 3
+        @($parent.Children | ForEach-Object Status) | Should -Be @('Success', 'Error', 'Success')
+        $parent.Children[1].Detail | Should -Be 'boom 2'
+    }
+
+    It 'stops collection processing on the first error when ContinueOnError is disabled' {
+        {
+            Invoke-Step -Name 'Batch stop' -InputObject @(1, 2, 3) -ScriptBlock {
+                param($item, $index)
+                if ($index -eq 1) {
+                    throw 'boom stop'
+                }
+            }
+        } | Should -Throw '*boom stop*'
+    }
+
+    It 'supports parallel collection processing in PowerShell 7+' -Skip:($PSVersionTable.PSVersion.Major -lt 7) {
+        $env:ITFABRIK_STEPPER_PARALLEL_PREFIX = 'Inner'
+
+        try {
+            $parent = Invoke-Step -Name 'Parallel batch' -InputObject @('alpha', 'beta', 'gamma') -Parallel -ThrottleLimit 2 -PassThru -ScriptBlock {
+                param($item, $index)
+                Invoke-Step -Name "${env:ITFABRIK_STEPPER_PARALLEL_PREFIX}-$item-$index" -ScriptBlock {
+                    Start-Sleep -Milliseconds 20
+                }
+            }
+
+            $parent.Status | Should -Be 'Success'
+            @($parent.Children | ForEach-Object Name) | Should -Be @(
+                'Parallel batch [alpha]',
+                'Parallel batch [beta]',
+                'Parallel batch [gamma]'
+            )
+            @($parent.Children | ForEach-Object {
+                    $_.Children[0].Name
+                }) | Should -Be @(
+                'Inner-alpha-0',
+                'Inner-beta-1',
+                'Inner-gamma-2'
+            )
+        }
+        finally {
+            Remove-Item Env:ITFABRIK_STEPPER_PARALLEL_PREFIX -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'preserves child failures in parallel collection mode when ContinueOnError is enabled' -Skip:($PSVersionTable.PSVersion.Major -lt 7) {
+        $parent = Invoke-Step -Name 'Parallel errors' -InputObject @(1, 2, 3) -Parallel -ThrottleLimit 2 -ContinueOnError -PassThru -ScriptBlock {
+            param($item)
+            if ($item -eq 2) {
+                throw 'parallel boom'
+            }
+        }
+
+        $parent.Status | Should -Be 'Success'
+        @($parent.Children | ForEach-Object Status) | Should -Be @('Success', 'Error', 'Success')
+        $parent.Children[1].Detail | Should -Be 'parallel boom'
+    }
 }
 

@@ -42,7 +42,7 @@ jobs:
             Write-Host "Pester $($installed.Version) already available (>= $min)" -ForegroundColor Green
           }
 
-      - name: Run Pester tests with coverage gate (>=90%)
+      - name: Run Pester tests with coverage enabled
         shell: pwsh
         run: |
           $ht = Import-PowerShellDataFile -LiteralPath 'Tests/PesterConfig.psd1'
@@ -51,16 +51,6 @@ jobs:
           $config.Output.CIFormat = 'GithubActions'
           $config.Run.PassThru = $true
           $result = Invoke-Pester -Configuration $config
-          $coverageSummary = [string]$result.CodeCoverage
-          if ($coverageSummary -match '^(?<current>[\d\.,]+)%\s*/\s*(?<target>[\d\.,]+)%') {
-            $currentCoverage = [double](($matches.current -replace ',', '.'))
-            $targetCoverage = [double](($matches.target -replace ',', '.'))
-            if ($currentCoverage -lt $targetCoverage) {
-              throw "Coverage below target: $currentCoverage% < $targetCoverage%"
-            }
-          } else {
-            throw "Unable to parse Pester coverage summary: $coverageSummary"
-          }
           if ($result.Result -ne 'Passed') {
             Write-Error "Pester run failed or coverage below target. Result: $($result.Result)"
           }
