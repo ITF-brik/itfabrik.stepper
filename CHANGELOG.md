@@ -6,6 +6,17 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-03-06
+
+### Added
+- `Invoke-Step` prend maintenant en charge un mode collection via `-InputObject`, avec une sous-etape par element.
+- La collection peut etre executee en parallele avec `-Parallel`, `-ParallelThreshold` et `-ThrottleLimit`.
+- Le chemin parallele est compatible PowerShell 7 (`ForEach-Object -Parallel`) et Windows PowerShell 5.1 (`Start-Job`).
+- Le README documente le mode collection et le mode parallele avec des exemples utilisateurs.
+
+### Changed
+- Le workflow `pester-coverage.yml` est aligne sur la methode de `ITFabrik.Logger` pour eviter un faux negatif sur la couverture des commandes executees dans des runspaces/jobs paralleles.
+
 ## [1.0.7] - 2026-03-06
 
 ### Fixed
