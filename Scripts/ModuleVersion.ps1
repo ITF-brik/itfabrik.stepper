@@ -30,9 +30,19 @@ function Get-StepperReleaseVersionInfo {
 
     $prerelease = $null
     if ($manifest.ContainsKey('PrivateData') -and $null -ne $manifest.PrivateData) {
-        $psData = $manifest.PrivateData['PSData']
-        if ($null -ne $psData -and $psData.ContainsKey('Prerelease')) {
-            $rawPrerelease = [string]$psData['Prerelease']
+        $privateData = $manifest.PrivateData
+        if ($privateData.ContainsKey('PSData')) {
+            $psData = $privateData['PSData']
+            if ($null -ne $psData -and $psData.ContainsKey('Prerelease')) {
+                $rawPrerelease = [string]$psData['Prerelease']
+                if (-not [string]::IsNullOrWhiteSpace($rawPrerelease)) {
+                    $prerelease = $rawPrerelease.Trim()
+                }
+            }
+        }
+
+        if ($null -eq $prerelease -and $privateData.ContainsKey('Prerelease')) {
+            $rawPrerelease = [string]$privateData['Prerelease']
             if (-not [string]::IsNullOrWhiteSpace($rawPrerelease)) {
                 $prerelease = $rawPrerelease.Trim()
             }

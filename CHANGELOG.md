@@ -6,6 +6,18 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [Unreleased]
 
+## [1.0.9-alpha1] - 2026-03-06
+
+### Added
+- Support des versions prerelease via `PrivateData.PSData.Prerelease` dans le manifeste.
+- Validation tag/version adaptee aux tags du type `v1.0.9-alpha1`.
+- Tests de non-regression autour de la resolution des versions de release et prerelease.
+
+### Fixed
+- Le mode `Invoke-Step -Parallel` rejoue maintenant les logs des workers dans l'ordre des elements.
+- Les loggers personnalises recoivent aussi les messages emis depuis les workers paralleles.
+- La documentation utilisateur precise le role de `-ThrottleLimit` et le comportement de log en mode parallele.
+
 ## [1.0.8] - 2026-03-06
 
 ### Added

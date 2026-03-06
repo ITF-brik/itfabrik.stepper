@@ -1,6 +1,6 @@
 @{
     RootModule        = 'ITFabrik.Stepper.psm1'
-    ModuleVersion     = '1.0.8'
+    ModuleVersion     = '1.0.9'
     GUID              = 'b3a9d3b4-7a2d-4a0b-9f8e-2c3b6f7f8c2e'
     Author            = 'IT FABRIK'
     CompanyName       = 'IT FABRIK'
@@ -20,11 +20,10 @@
             ProjectUri   = 'https://github.com/ITF-brik/itfabrik.stepper'
             IconUri      = 'https://raw.githubusercontent.com/ITF-brik/itfabrik.stepper/main/Media/icon.png'
             ReleaseNotes = 'Voir CHANGELOG.md et la page Releases sur GitHub.'
-            Prerelease   = $null
+            Prerelease   = 'alpha1'
         }
     }
 }
-
 
 
 
