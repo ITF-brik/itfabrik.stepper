@@ -12,6 +12,7 @@ Thumbs.db
 # PowerShell/Packaging
 TestResults/
 PesterTestResults*.xml
+testResults.xml
 coverage.xml
 coverage/
 *.nupkg
