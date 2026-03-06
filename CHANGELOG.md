@@ -6,6 +6,12 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-03-06
+
+### Fixed
+- `Write-Log` utilise maintenant `StepManager` comme composant de repli lorsqu'aucune step active n'existe.
+- L'intégration avec des loggers externes, notamment `ITFabrik.Logger` et son sink `Serilog`, produit désormais un `Component` non vide hors step.
+
 ## [2025.10.2.0] - 2025-10-14
 
 ### Added
