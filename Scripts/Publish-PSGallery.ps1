@@ -8,6 +8,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+. (Join-Path $PSScriptRoot 'ModuleVersion.ps1')
+
 $requiredFiles = @(
     'ITFabrik.Stepper.psd1',
     'ITFabrik.Stepper.psm1',
@@ -31,6 +33,7 @@ if ($missing.Count -gt 0 -or $extra.Count -gt 0) {
 $manifest = Join-Path $ModulePath 'ITFabrik.Stepper.psd1'
 if (-not (Test-Path -LiteralPath $manifest)) { throw "Manifest not found: $manifest" }
 $manifest = (Resolve-Path -LiteralPath $manifest).Path
+$releaseInfo = Get-StepperReleaseVersionInfo -ManifestPath $manifest
 
 $rootModule = (Import-PowerShellDataFile -LiteralPath $manifest).RootModule
 if (-not $rootModule -or -not (Test-Path -LiteralPath (Join-Path $ModulePath $rootModule))) {
@@ -43,6 +46,7 @@ if (-not $imported) { throw "Import-Module failed on artifact: $manifest" }
 Remove-Module -Name $imported.Name -Force -ErrorAction SilentlyContinue
 
 Write-Host "Publishing module from artifact: $ModulePath" -ForegroundColor Cyan
+Write-Host "Effective release version: $($releaseInfo.EffectiveVersion)" -ForegroundColor Cyan
 
 if ($ValidateOnly) {
     Write-Host 'ValidateOnly enabled: no publication executed.' -ForegroundColor Green
@@ -55,6 +59,8 @@ if ([string]::IsNullOrWhiteSpace($ApiKey)) {
 
 try {
     Set-PSRepository -Name $Repository -InstallationPolicy Trusted -ErrorAction SilentlyContinue
-} catch { }
+} catch {
+    Write-Verbose ("Unable to set PSRepository '{0}' to Trusted: {1}" -f $Repository, $_.Exception.Message)
+}
 
 Publish-Module -Path $ModulePath -Repository $Repository -NuGetApiKey $ApiKey -Verbose -Force

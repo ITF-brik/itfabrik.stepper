@@ -11,6 +11,16 @@ Le contexte complet du flux se trouve dans `docs/development-cycle.md`.
   - `CHANGELOG.md`
 - Avoir pousse les derniers commits
 
+## Version stable vs prerelease
+- Release stable :
+  - `ModuleVersion = '1.0.9'`
+  - `PrivateData.PSData.Prerelease = $null`
+  - tag attendu : `v1.0.9`
+- Release alpha/beta/rc :
+  - `ModuleVersion = '1.0.9'`
+  - `PrivateData.PSData.Prerelease = 'alpha1'` (ou `beta1`, `rc1`, etc.)
+  - tag attendu : `v1.0.9-alpha1`
+
 ## Etapes
 1. Construire et valider l'artifact :
    ```powershell
@@ -21,9 +31,10 @@ Le contexte complet du flux se trouve dans `docs/development-cycle.md`.
    ```powershell
    ./Scripts/New-ReleaseTag.ps1 -Push
    ```
-3. Creer la release GitHub sur le tag `vX.Y.Z`.
-4. Choisir la branche `cycle/*` active comme `Target` si elle doit etre fermee automatiquement apres succes.
-5. Laisser `.github/workflows/publish.yml` publier sur PowerShell Gallery.
+3. Creer la release GitHub sur le tag attendu (`vX.Y.Z` ou `vX.Y.Z-alpha1`).
+4. Si la version est prerelease, marquer aussi la release GitHub comme prerelease.
+5. Choisir la branche `cycle/*` active comme `Target` si elle doit etre fermee automatiquement apres succes.
+6. Laisser `.github/workflows/publish.yml` publier sur PowerShell Gallery.
 
 ## Resultat attendu
 - `check-tag.yml` valide l'alignement tag/version

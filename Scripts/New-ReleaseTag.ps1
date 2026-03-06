@@ -1,11 +1,12 @@
 <#
 .SYNOPSIS
-  Creates a Git tag vX.Y.Z from the module manifest version.
+  Creates a Git tag from the effective module release version.
 
 .DESCRIPTION
-  Reads `ITFabrik.Stepper.psd1`, validates `ModuleVersion`, ensures the tag does
-  not already exist, then creates an annotated tag `vX.Y.Z`. With `-Push`, the
-  tag is pushed to `origin`.
+  Reads `ITFabrik.Stepper.psd1`, resolves the effective release version from
+  `ModuleVersion` and optional `PrivateData.PSData.Prerelease`, ensures the tag
+  does not already exist, then creates an annotated tag such as `v1.0.8` or
+  `v1.0.9-alpha1`. With `-Push`, the tag is pushed to `origin`.
 #>
 param(
     [switch]$Push
@@ -20,18 +21,11 @@ if (-not (Test-Path -LiteralPath $manifestPath)) {
     throw "Manifest not found: $manifestPath"
 }
 
-$manifest = Import-PowerShellDataFile -LiteralPath $manifestPath
-$version = [string]$manifest.ModuleVersion
-if ([string]::IsNullOrWhiteSpace($version)) {
-    throw 'ModuleVersion missing in manifest.'
-}
+. (Join-Path $PSScriptRoot 'ModuleVersion.ps1')
 
-if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
-    throw "ModuleVersion '$version' is not in X.Y.Z format."
-}
-
-$tag = "v$version"
-Write-Host "Manifest version: $version -> Tag: $tag" -ForegroundColor Cyan
+$releaseInfo = Get-StepperReleaseVersionInfo -ManifestPath $manifestPath
+$tag = $releaseInfo.TagName
+Write-Host "Manifest version: $($releaseInfo.EffectiveVersion) -> Tag: $tag" -ForegroundColor Cyan
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     throw 'Git not found in PATH.'

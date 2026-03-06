@@ -19,11 +19,9 @@ jobs:
         run: |
           if (-not $env:TAG_NAME) { throw 'TAG_NAME missing from github.ref_name' }
           Write-Host "Detected tag: $env:TAG_NAME" -ForegroundColor Cyan
-          $manifest = Import-PowerShellDataFile -LiteralPath 'ITFabrik.Stepper.psd1'
-          $moduleVersion = [string]$manifest.ModuleVersion
-          if ([string]::IsNullOrWhiteSpace($moduleVersion)) { throw 'ModuleVersion missing in ITFabrik.Stepper.psd1' }
-          $tagVersion = $env:TAG_NAME.TrimStart('v', 'V')
-          if ($moduleVersion -ne $tagVersion) {
-            throw "Mismatch: ModuleVersion=$moduleVersion <> Tag=$($env:TAG_NAME)"
+          . ./Scripts/ModuleVersion.ps1
+          $releaseInfo = Get-StepperReleaseVersionInfo -ManifestPath 'ITFabrik.Stepper.psd1'
+          if (-not (Test-StepperTagMatchesManifest -ManifestPath 'ITFabrik.Stepper.psd1' -TagName $env:TAG_NAME)) {
+            throw "Mismatch: EffectiveVersion=$($releaseInfo.EffectiveVersion) <> Tag=$($env:TAG_NAME)"
           }
-          Write-Host "Tag/version aligned: v$moduleVersion" -ForegroundColor Green
+          Write-Host "Tag/version aligned: $($releaseInfo.TagName)" -ForegroundColor Green

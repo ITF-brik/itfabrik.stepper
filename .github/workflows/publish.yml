@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag to validate (e.g. v1.0.7). Optional for manual runs.'
+        description: 'Release tag to validate (e.g. v1.0.8 or v1.0.9-alpha1). Optional for manual runs.'
         required: false
         type: string
       release_branch:
@@ -36,9 +36,8 @@ jobs:
           INPUT_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
           REF_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         run: |
-          $manifest = Import-PowerShellDataFile -LiteralPath 'ITFabrik.Stepper.psd1'
-          $moduleVersion = [string]$manifest.ModuleVersion
-          if ([string]::IsNullOrWhiteSpace($moduleVersion)) { throw 'ModuleVersion missing in ITFabrik.Stepper.psd1' }
+          . ./Scripts/ModuleVersion.ps1
+          $releaseInfo = Get-StepperReleaseVersionInfo -ManifestPath 'ITFabrik.Stepper.psd1'
           $releaseTag = if (-not [string]::IsNullOrWhiteSpace($env:RELEASE_TAG)) {
             $env:RELEASE_TAG
           } elseif (-not [string]::IsNullOrWhiteSpace($env:INPUT_RELEASE_TAG)) {
@@ -46,13 +45,12 @@ jobs:
           } elseif (-not [string]::IsNullOrWhiteSpace($env:REF_TAG)) {
             $env:REF_TAG
           } else {
-            "v$moduleVersion"
+            $releaseInfo.TagName
           }
-          $tagVersion = $releaseTag.TrimStart('v', 'V')
-          if ($moduleVersion -ne $tagVersion) {
-            throw "Mismatch: ModuleVersion=$moduleVersion <> Tag=$releaseTag"
+          if (-not (Test-StepperTagMatchesManifest -ManifestPath 'ITFabrik.Stepper.psd1' -TagName $releaseTag)) {
+            throw "Mismatch: EffectiveVersion=$($releaseInfo.EffectiveVersion) <> Tag=$releaseTag"
           }
-          Write-Host "Tag/version aligned: $releaseTag (ModuleVersion=$moduleVersion)" -ForegroundColor Green
+          Write-Host "Tag/version aligned: $releaseTag (EffectiveVersion=$($releaseInfo.EffectiveVersion))" -ForegroundColor Green
 
       - name: Build module artifact
         shell: pwsh
