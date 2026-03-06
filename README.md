@@ -232,7 +232,8 @@ $global:StepManagerLogger = {
         $Component,   # string : nom du composant ou de l'étape
         $Message,     # string : message à journaliser
         $Severity,    # string : Info, Success, Warning, Error, Debug, Verbose
-        $IndentLevel  # int    : niveau d'indentation (0 = racine)
+        $IndentLevel, # int    : niveau d'indentation (0 = racine)
+        $Timestamp    # datetime optionnel : horodatage d'origine du message
     )
     # ...votre logique de log ici...
 }
@@ -241,6 +242,7 @@ $global:StepManagerLogger = {
 Spécifications à respecter pour un logger externe:
 
 - Accepter les 4 paramètres ci-dessus, dans l'ordre.
+- Idéalement accepter aussi un 5e paramètre optionnel `$Timestamp` pour conserver l'horodatage réel des logs rejoués depuis des workers parallèles.
 - Ne pas interrompre l'exécution (pas d'exception non gérée).
 
 ## Couplage avec itfabrik.Logger

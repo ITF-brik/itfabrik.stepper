@@ -79,7 +79,7 @@ function Write-StepLogEntry {
             Write-StepMessage -Severity $normalizedEntry.Severity -Message ("[{0}] {1}" -f $normalizedEntry.Component, $normalizedEntry.Message) -IndentLevel $normalizedEntry.IndentLevel -Timestamp $normalizedEntry.Timestamp
         }
     } else {
-        & $logger $normalizedEntry.Component $normalizedEntry.Message $normalizedEntry.Severity $normalizedEntry.IndentLevel
+        & $logger $normalizedEntry.Component $normalizedEntry.Message $normalizedEntry.Severity $normalizedEntry.IndentLevel $normalizedEntry.Timestamp
     }
 }
 

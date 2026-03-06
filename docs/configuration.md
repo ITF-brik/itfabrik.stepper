@@ -23,10 +23,12 @@ $global:StepManagerLogger = {
         $Component,   # string : nom du composant (par défaut 'StepManager')
         $Message,     # string : message à journaliser
         $Severity,    # string : Info, Success, Warning, Error, Debug, Verbose
-        $IndentLevel  # int    : niveau d'indentation (0 = racine)
+        $IndentLevel, # int    : niveau d'indentation (0 = racine)
+        $Timestamp    # datetime optionnel : horodatage d'origine du message
     )
     # Exemple minimal : écriture fichier
-    $line = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [$Severity] [$Component] $(' ' * ($IndentLevel*2))$Message"
+    $effectiveTimestamp = if ($null -ne $Timestamp) { $Timestamp } else { Get-Date }
+    $line = "[$($effectiveTimestamp.ToString('yyyy-MM-dd HH:mm:ss'))] [$Severity] [$Component] $(' ' * ($IndentLevel*2))$Message"
     Add-Content -Path "$HOME/itfabrik.stepper.log" -Value $line -Encoding UTF8
 }
 ```
@@ -35,4 +37,4 @@ Notes:
 - Le composant par défaut utilisé par le module est la chaîne `'StepManager'` (compatibilité ascendante). Vous pouvez l’ignorer ou le mapper.
 - Si aucun logger n’est défini, la console intégrée est utilisée automatiquement.
 - L’indentation est calculée depuis la Step courante si `IndentLevel` n’est pas fourni explicitement par l’appelant.
-
+- Pour refléter correctement les exécutions `Invoke-Step -Parallel`, le logger externe devrait consommer le paramètre optionnel `$Timestamp`.

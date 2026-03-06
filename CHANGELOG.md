@@ -6,6 +6,15 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [Unreleased]
 
+## [1.0.10] - 2026-03-06
+
+### Fixed
+- Le logger externe `$StepManagerLogger` recoit maintenant aussi un 5e parametre optionnel `Timestamp`.
+- Les logs rejoues depuis `Invoke-Step -Parallel` peuvent donc conserver leur horodatage reel jusque dans un logger externe compatible.
+
+### Changed
+- La documentation de configuration du logger externe precise le support du parametre optionnel `Timestamp`.
+
 ## [1.0.9] - 2026-03-06
 
 ### Added

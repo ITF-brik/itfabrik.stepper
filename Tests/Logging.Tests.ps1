@@ -55,6 +55,38 @@ Describe 'Logging' {
         Remove-Variable -Name calls -Scope Global -ErrorAction SilentlyContinue
     }
 
+    It 'transmet le timestamp au logger personnalisé quand il est disponible' {
+        $script:calls = [System.Collections.Generic.List[object]]::new()
+        $customLogger = {
+            param($Component, $Message, $Severity, $IndentLevel, $Timestamp)
+            [void]$script:calls.Add([pscustomobject]@{
+                    Component = $Component
+                    Message = $Message
+                    Severity = $Severity
+                    IndentLevel = $IndentLevel
+                    Timestamp = $Timestamp
+                })
+        }
+        Set-Variable -Name StepManagerLogger -Value $customLogger -Scope Global
+        try {
+            Write-StepLogEntry -Entry ([pscustomobject]@{
+                    Timestamp = [datetime]'2026-03-06T16:35:33'
+                    Source = 'User'
+                    Component = 'Controle des serveurs [srv-01]'
+                    Message = 'Verification du serveur #0 : srv-01'
+                    Severity = 'Info'
+                    IndentLevel = 1
+                    StepName = 'Controle des serveurs [srv-01]'
+                })
+        }
+        finally {
+            Remove-Variable -Name StepManagerLogger -Scope Global -ErrorAction SilentlyContinue
+        }
+
+        $script:calls.Count | Should -Be 1
+        $script:calls[0].Timestamp | Should -Be ([datetime]'2026-03-06T16:35:33')
+    }
+
     It 'utilise le nom de l''étape courante avec un logger personnalisé' {
         $global:calls = @()
         $customLogger = { param($Component, $Message, $Severity, $IndentLevel) $global:calls += "$Component|$Message|$Severity|$IndentLevel" }
@@ -107,4 +139,3 @@ Describe 'Logging' {
     Remove-Variable -Name calls -Scope Global -ErrorAction SilentlyContinue
     }
 }
-
