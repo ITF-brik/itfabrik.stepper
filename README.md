@@ -2,6 +2,7 @@
 
 ## Documentation
 - Vue d’ensemble et guides: `docs/index.md`
+- Workflow projet: `docs/development-cycle.md`
 
 [![CI](https://github.com/ITF-brik/itfabrik.stepper/actions/workflows/ci.yml/badge.svg)](https://github.com/ITF-brik/itfabrik.stepper/actions/workflows/ci.yml)
 [![PS Gallery Version](https://img.shields.io/powershellgallery/v/ITFabrik.Stepper.svg?style=flat)](https://www.powershellgallery.com/packages/ITFabrik.Stepper)

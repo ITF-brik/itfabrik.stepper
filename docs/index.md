@@ -1,10 +1,13 @@
-# itfabrik.stepper — Documentation
+# ITFabrik.Stepper - Documentation
 
-Bienvenue. Cette documentation couvre l'usage du module itfabrik.stepper, ses points d'extension de journalisation et les procédures projet (CI/CD, publication).
+Cette documentation est organisee par intention.
 
-- Démarrage et configuration: `docs/configuration.md`
-- Sortie console et formatage: `docs/sinks/console.md`
-- Dépannage: `docs/troubleshooting.md`
-- Cycles de développement: `docs/development-cycle.md`
-- Mise en place GitHub et publication: `docs/github-setup.md`, `docs/release-procedure.md`
+## Utiliser le module
+- `docs/configuration.md` : installation, configuration et points d'extension.
+- `docs/sinks/console.md` : rendu console et formatage des messages.
+- `docs/troubleshooting.md` : diagnostic et depannage.
 
+## Maintenir le projet
+- `docs/development-cycle.md` : document principal pour le flux recurrent de developpement, release et cloture de branche.
+- `docs/release-procedure.md` : checklist courte pour publier une version quand un cycle est pret.
+- `docs/github-setup.md` : mise en place initiale du depot GitHub, des secrets et des workflows.

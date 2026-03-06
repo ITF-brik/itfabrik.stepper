@@ -1,33 +1,62 @@
 # Cycle de developpement
 
-Ce document formalise le demarrage et la cloture d'un cycle de developpement.
+Ce document est la reference principale pour le flux de travail recurrent du projet.
+
+## Principe
+- Un cycle de developpement = une branche d'implementation dediee.
+- Convention de nommage : `cycle/YYYYMMDD-<type>-<objectif>`.
+- La branche est creee au debut du cycle, utilisee jusqu'a la release, puis fermee apres publication reussie.
 
 ## 1) Demarrer un cycle
-- A l'ouverture d'un nouveau cycle, creer une branche d'implementation dediee depuis `main`.
-- Utiliser le script:
+- Depuis `main`, creer la branche avec :
   ```powershell
   ./Scripts/New-DevelopmentCycle.ps1 -Type 'Reorganisation CI/CD' -Objective 'Aligner la methodologie avec ITFabrik.Logger' -Push
   ```
-- Convention de nommage:
-  - `cycle/YYYYMMDD-<type>-<objective>`
-  - Exemple: `cycle/20260306-reorganisation-ci-cd-aligner-la-methodologie-avec-itfabrik-logger`
+- Le script :
+  - construit un nom de branche standardise,
+  - cree la branche localement,
+  - bascule dessus,
+  - la pousse vers `origin` si `-Push` est fourni.
 
-## 2) Travailler sur la branche
-- Les workflows `.github/workflows/ci.yml` et `.github/workflows/pester-coverage.yml` s'executent sur `main`, `master` et `cycle/**`.
-- Garder le cycle de travail, les commits et la validation sur cette branche jusqu'a la release.
+## 2) Developper sur la branche
+- Faire les commits du cycle sur cette branche uniquement.
+- Les workflows suivants s'executent aussi sur `cycle/**` :
+  - `.github/workflows/ci.yml`
+  - `.github/workflows/pester-coverage.yml`
+- Tant que la version n'est pas publiee, la branche reste la source de verite du cycle.
 
-## 3) Publier la version
-- Mettre a jour `ITFabrik.Stepper.psd1` et `CHANGELOG.md`.
-- Creer et pousser le tag avec:
+## 3) Preparer la version
+- Mettre a jour :
+  - `ITFabrik.Stepper.psd1`
+  - `CHANGELOG.md`
+- Valider localement si necessaire :
+  ```powershell
+  ./Scripts/Build-Module.ps1
+  ./Scripts/Publish-PSGallery.ps1 -ModulePath .\dist\ITFabrik.Stepper -ValidateOnly
+  ```
+- Committer puis pousser les derniers changements du cycle.
+
+## 4) Publier la release
+- Creer le tag depuis le manifeste :
   ```powershell
   ./Scripts/New-ReleaseTag.ps1 -Push
   ```
-- Lors de la creation de la release GitHub, choisir la branche `cycle/*` comme `Target` si vous voulez que la branche distante soit fermee automatiquement apres succes.
+- Creer ensuite la release GitHub sur ce tag.
+- Important :
+  - choisir la branche `cycle/*` active comme `Target` si vous voulez qu'elle soit fermee automatiquement apres succes,
+  - le workflow `.github/workflows/publish.yml` publie ensuite le module sur PowerShell Gallery.
 
-## 4) Fermer le cycle
-- Si la publication GitHub / PSGallery reussit et que la release vise une branche `cycle/*`, `.github/workflows/publish.yml` supprime automatiquement la branche distante.
-- Pour supprimer aussi la branche locale:
+## 5) Fermer le cycle
+- Si la release a ete creee depuis une branche `cycle/*`, le workflow de publication supprime automatiquement la branche distante apres succes.
+- Pour supprimer aussi la branche locale :
   ```powershell
   ./Scripts/Close-DevelopmentCycle.ps1 -Branch 'cycle/20260306-reorganisation-ci-cd-aligner-la-methodologie-avec-itfabrik-logger'
   ```
-- Pour une publication declenchee manuellement via `workflow_dispatch`, fournir `release_branch` au workflow si la branche doit etre supprimee apres succes.
+- Si la publication est lancee manuellement via `workflow_dispatch`, renseigner `release_branch` pour obtenir le meme comportement de fermeture distante.
+
+## Raccourcis utiles
+- Ouvrir un cycle : `Scripts/New-DevelopmentCycle.ps1`
+- Construire l'artifact : `Scripts/Build-Module.ps1`
+- Valider l'artifact : `Scripts/Publish-PSGallery.ps1 -ValidateOnly`
+- Tagger la version : `Scripts/New-ReleaseTag.ps1`
+- Fermer la branche locale : `Scripts/Close-DevelopmentCycle.ps1`
