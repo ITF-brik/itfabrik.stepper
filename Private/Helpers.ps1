@@ -40,7 +40,14 @@ function ConvertTo-StepLogEntry {
         [Parameter(Mandatory)]$Entry
     )
 
+    $timestamp = if ($Entry.PSObject.Properties.Match('Timestamp').Count -gt 0 -and $null -ne $Entry.Timestamp) {
+        [datetime]$Entry.Timestamp
+    } else {
+        Get-Date
+    }
+
     return [pscustomobject]@{
+        Timestamp = $timestamp
         Source = [string]$Entry.Source
         Component = [string]$Entry.Component
         Message = [string]$Entry.Message
@@ -67,9 +74,9 @@ function Write-StepLogEntry {
     $logger = Get-StepManagerLogger
     if ($null -eq $logger) {
         if ($normalizedEntry.Source -eq 'User') {
-            Write-StepMessage -Severity $normalizedEntry.Severity -Message $normalizedEntry.Message -IndentLevel $normalizedEntry.IndentLevel -StepName $normalizedEntry.StepName -ForegroundColor $normalizedEntry.ForegroundColor
+            Write-StepMessage -Severity $normalizedEntry.Severity -Message $normalizedEntry.Message -IndentLevel $normalizedEntry.IndentLevel -StepName $normalizedEntry.StepName -Timestamp $normalizedEntry.Timestamp -ForegroundColor $normalizedEntry.ForegroundColor
         } else {
-            Write-StepMessage -Severity $normalizedEntry.Severity -Message ("[{0}] {1}" -f $normalizedEntry.Component, $normalizedEntry.Message) -IndentLevel $normalizedEntry.IndentLevel
+            Write-StepMessage -Severity $normalizedEntry.Severity -Message ("[{0}] {1}" -f $normalizedEntry.Component, $normalizedEntry.Message) -IndentLevel $normalizedEntry.IndentLevel -Timestamp $normalizedEntry.Timestamp
         }
     } else {
         & $logger $normalizedEntry.Component $normalizedEntry.Message $normalizedEntry.Severity $normalizedEntry.IndentLevel
@@ -83,6 +90,7 @@ function Write-StepMessage {
         [Parameter(Mandatory)] [string]$Message,
         [int]$IndentLevel = 0,
         [string]$StepName = '',
+        [datetime]$Timestamp,
         [string]$ForegroundColor
     )
 
@@ -115,7 +123,8 @@ function Write-StepMessage {
     }
 
     $indent = if ($IndentLevel -gt 0) { ' ' * ($IndentLevel * 2) } else { '' }
-    $now = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+    $effectiveTimestamp = if ($PSBoundParameters.ContainsKey('Timestamp')) { $Timestamp } else { Get-Date }
+    $now = $effectiveTimestamp.ToString('yyyy-MM-dd HH:mm:ss')
     $step = if ($StepName) { "[$StepName]" } else { '' }
     # Ne plus afficher le Component ici pour éviter la duplication d'étiquettes
     $text = "[$now] $prefix$indent$step $Message"

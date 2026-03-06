@@ -30,6 +30,14 @@ Describe 'Logging' {
         Assert-MockCalled Write-Host -Exactly 1 -Scope It -ParameterFilter { $Object -match 'Test log' }
     }
 
+    It 'preserve un timestamp explicite dans Write-StepMessage' {
+        . (Join-Path $PSScriptRoot '..\Private\Helpers.ps1')
+        Mock Write-Host { }
+        $timestamp = [datetime]'2026-03-06T12:34:56'
+        Write-StepMessage -Severity 'Info' -Message 'Timestamp log' -IndentLevel 1 -Timestamp $timestamp
+        Assert-MockCalled Write-Host -Exactly 1 -Scope It -ParameterFilter { $Object -match '2026-03-06 12:34:56' -and $Object -match 'Timestamp log' }
+    }
+
 
     It 'utilise Write-Log (fallback console)' {
         Mock Write-StepMessage { } -ModuleName ITFabrik.Stepper
