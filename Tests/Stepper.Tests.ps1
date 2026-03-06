@@ -90,6 +90,15 @@ Describe 'ITFabrik.Stepper' {
         { Invoke-Step -Name '' -ScriptBlock { } } | Should -Throw
     }
 
+    It 'throws when Name exceeds 80 characters' {
+        $name = ('A' * 81)
+        { Invoke-Step -Name $name -ScriptBlock { } } | Should -Throw '*Le nom de l''étape ne doit pas dépasser 80 caractères.*'
+    }
+
+    It 'throws when Name contains invalid characters' {
+        { Invoke-Step -Name 'Bad/Name' -ScriptBlock { } } | Should -Throw '*Le nom de l''étape contient des caractères interdits*'
+    }
+
     # Pour la compatibilité PowerShell Core, prévoir un pipeline CI multi‑plateforme (hors test local)
 
     It 'returns a step for simple Invoke-Step' {

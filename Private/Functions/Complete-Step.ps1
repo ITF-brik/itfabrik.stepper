@@ -5,7 +5,9 @@ function Complete-Step {
     $current = Get-CurrentStep
     if ($current) {
         $current.EndTime = Get-Date
-        try { $current.Duration = ($current.EndTime - $current.StartTime) } catch { }
+        if ($null -ne $current.StartTime -and $null -ne $current.EndTime) {
+            $current.Duration = ($current.EndTime - $current.StartTime)
+        }
     }
 
     Invoke-Logger -Component 'StepManager' -Severity 'Verbose' -Message "Étape [$($current.Name)] terminée." -IndentLevel ($current.Level)

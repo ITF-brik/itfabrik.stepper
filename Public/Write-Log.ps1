@@ -32,24 +32,16 @@ function Write-Log {
         $ForegroundColor = 'DarkGray'
     }
     
-    $logger = $null
-    try {
-        $logger = Get-PSVariable -Name 'StepManagerLogger' -ErrorAction Stop
-    } catch {
-        $logger = $null
-        try {
-            $logger = (Get-Variable -Name 'StepManagerLogger' -Scope Script -ErrorAction Stop).Value
-        } catch {
-            try {
-                $logger = (Get-Variable -Name 'StepManagerLogger' -Scope Global -ErrorAction Stop).Value
-            } catch {}
-        }
-    }
+    $logger = Get-StepManagerLogger
     if ($null -eq $logger) {
         # Affiche uniquement le StepName pour éviter la duplication [Step][Component]
         Write-StepMessage -Severity $Severity -Message $Message -IndentLevel $finalIndent -StepName $($currentStep.Name) -ForegroundColor $ForegroundColor
     } else {
-        & $logger $($currentStep.Name) $Message $Severity $finalIndent
+        $component = if ($null -ne $currentStep -and -not [string]::IsNullOrWhiteSpace($currentStep.Name)) {
+            $currentStep.Name
+        } else {
+            'StepManager'
+        }
+        & $logger $component $Message $Severity $finalIndent
     }
 }
-

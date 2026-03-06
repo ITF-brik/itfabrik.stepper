@@ -1,0 +1,29 @@
+name: Verify Tag Version
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate pushed tag matches ModuleVersion
+        shell: pwsh
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if (-not $env:TAG_NAME) { throw 'TAG_NAME missing from github.ref_name' }
+          Write-Host "Detected tag: $env:TAG_NAME" -ForegroundColor Cyan
+          $manifest = Import-PowerShellDataFile -LiteralPath 'ITFabrik.Stepper.psd1'
+          $moduleVersion = [string]$manifest.ModuleVersion
+          if ([string]::IsNullOrWhiteSpace($moduleVersion)) { throw 'ModuleVersion missing in ITFabrik.Stepper.psd1' }
+          $tagVersion = $env:TAG_NAME.TrimStart('v', 'V')
+          if ($moduleVersion -ne $tagVersion) {
+            throw "Mismatch: ModuleVersion=$moduleVersion <> Tag=$($env:TAG_NAME)"
+          }
+          Write-Host "Tag/version aligned: v$moduleVersion" -ForegroundColor Green

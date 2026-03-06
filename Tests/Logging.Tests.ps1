@@ -26,7 +26,7 @@ Describe 'Logging' {
     It 'affiche un message avec Write-StepMessage' {
         . (Join-Path $PSScriptRoot '..\Private\Helpers.ps1')
         Mock Write-Host { }
-        Write-StepMessage -Severity 'Info' -Message 'Test log' -IndentLevel 2 -Component 'UnitTest'
+        Write-StepMessage -Severity 'Info' -Message 'Test log' -IndentLevel 2
         Assert-MockCalled Write-Host -Exactly 1 -Scope It -ParameterFilter { $Object -match 'Test log' }
     }
 
@@ -43,7 +43,22 @@ Describe 'Logging' {
         Set-Variable -Name StepManagerLogger -Value $customLogger -Scope Global
         Write-Log -Message 'Msg' -Severity 'Warning'
         Remove-Variable -Name StepManagerLogger -Scope Global
-        $global:calls | Should -Contain '|Msg|Warning|1'
+        $global:calls | Should -Contain 'StepManager|Msg|Warning|1'
+        Remove-Variable -Name calls -Scope Global -ErrorAction SilentlyContinue
+    }
+
+    It 'utilise le nom de l''étape courante avec un logger personnalisé' {
+        $global:calls = @()
+        $customLogger = { param($Component, $Message, $Severity, $IndentLevel) $global:calls += "$Component|$Message|$Severity|$IndentLevel" }
+        Set-Variable -Name StepManagerLogger -Value $customLogger -Scope Global
+        try {
+            Invoke-Step -Name 'ParentStep' -ScriptBlock {
+                Write-Log -Message 'Inner message' -Severity 'Info'
+            } | Out-Null
+        } finally {
+            Remove-Variable -Name StepManagerLogger -Scope Global -ErrorAction SilentlyContinue
+        }
+        $global:calls | Should -Contain 'ParentStep|Inner message|Info|1'
         Remove-Variable -Name calls -Scope Global -ErrorAction SilentlyContinue
     }
 

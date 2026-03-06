@@ -16,7 +16,7 @@ function Pop-Step {
     finally { [System.Threading.Monitor]::Exit($script:StepStateLock) }
 }
 
-function Peek-Step {
+function Get-StepStackTop {
     [System.Threading.Monitor]::Enter($script:StepStateLock)
     try { if ($script:StepStack.Count -gt 0) { return $script:StepStack.Peek() } }
     finally { [System.Threading.Monitor]::Exit($script:StepStateLock) }

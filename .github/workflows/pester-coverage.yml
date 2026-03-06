@@ -1,0 +1,66 @@
+name: CI - Coverage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PSGallery
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+
+      - name: Cache PowerShell modules
+        uses: actions/cache@v4
+        with:
+          path: "~\\Documents\\PowerShell\\Modules"
+          key: pwsh-modules-${{ runner.os }}-pester-5.5.0
+          restore-keys: |
+            pwsh-modules-${{ runner.os }}-pester-
+
+      - name: Install Pester 5.5+
+        shell: pwsh
+        run: |
+          $min = [version]'5.5.0'
+          $installed = Get-Module -ListAvailable Pester | Sort-Object Version -Descending | Select-Object -First 1
+          if (-not $installed -or $installed.Version -lt $min) {
+            Install-Module Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+          } else {
+            Write-Host "Pester $($installed.Version) already available (>= $min)" -ForegroundColor Green
+          }
+
+      - name: Run Pester tests with coverage gate (>=90%)
+        shell: pwsh
+        run: |
+          $ht = Import-PowerShellDataFile -LiteralPath 'Tests/PesterConfig.psd1'
+          Import-Module Pester -MinimumVersion 5.5.0 -Force | Out-Null
+          $config = New-PesterConfiguration -Hashtable $ht
+          $config.Output.CIFormat = 'GithubActions'
+          $config.Run.PassThru = $true
+          $result = Invoke-Pester -Configuration $config
+          $coverageSummary = [string]$result.CodeCoverage
+          if ($coverageSummary -match '^(?<current>[\d\.,]+)%\s*/\s*(?<target>[\d\.,]+)%') {
+            $currentCoverage = [double](($matches.current -replace ',', '.'))
+            $targetCoverage = [double](($matches.target -replace ',', '.'))
+            if ($currentCoverage -lt $targetCoverage) {
+              throw "Coverage below target: $currentCoverage% < $targetCoverage%"
+            }
+          } else {
+            throw "Unable to parse Pester coverage summary: $coverageSummary"
+          }
+          if ($result.Result -ne 'Passed') {
+            Write-Error "Pester run failed or coverage below target. Result: $($result.Result)"
+          }

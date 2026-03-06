@@ -1,0 +1,99 @@
+name: Publish to PowerShellGallery
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to validate (e.g. v1.0.7). Optional for manual runs.'
+        required: false
+        type: string
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PSGallery
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+
+      - name: Validate tag matches ModuleVersion
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+          REF_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: |
+          $manifest = Import-PowerShellDataFile -LiteralPath 'ITFabrik.Stepper.psd1'
+          $moduleVersion = [string]$manifest.ModuleVersion
+          if ([string]::IsNullOrWhiteSpace($moduleVersion)) { throw 'ModuleVersion missing in ITFabrik.Stepper.psd1' }
+          $releaseTag = if (-not [string]::IsNullOrWhiteSpace($env:RELEASE_TAG)) {
+            $env:RELEASE_TAG
+          } elseif (-not [string]::IsNullOrWhiteSpace($env:INPUT_RELEASE_TAG)) {
+            $env:INPUT_RELEASE_TAG
+          } elseif (-not [string]::IsNullOrWhiteSpace($env:REF_TAG)) {
+            $env:REF_TAG
+          } else {
+            "v$moduleVersion"
+          }
+          $tagVersion = $releaseTag.TrimStart('v', 'V')
+          if ($moduleVersion -ne $tagVersion) {
+            throw "Mismatch: ModuleVersion=$moduleVersion <> Tag=$releaseTag"
+          }
+          Write-Host "Tag/version aligned: $releaseTag (ModuleVersion=$moduleVersion)" -ForegroundColor Green
+
+      - name: Build module artifact
+        shell: pwsh
+        run: |
+          ./Scripts/Build-Module.ps1
+
+      - name: Validate artifact content (strict)
+        shell: pwsh
+        run: |
+          $modulePath = 'dist/ITFabrik.Stepper'
+          $required = @('ITFabrik.Stepper.psd1', 'ITFabrik.Stepper.psm1', 'ITFabrik.Stepper.format.ps1xml', 'LICENSE', 'README.md')
+          if (-not (Test-Path -LiteralPath $modulePath)) {
+            throw "Artifact path not found: $modulePath"
+          }
+          $actual = @(Get-ChildItem -LiteralPath $modulePath -File | Select-Object -ExpandProperty Name)
+          $missing = @($required | Where-Object { $_ -notin $actual })
+          $extra = @($actual | Where-Object { $_ -notin $required })
+          if ($missing.Count -gt 0 -or $extra.Count -gt 0) {
+            throw ("Invalid artifact content. Missing: [{0}] Extra: [{1}]" -f ($missing -join ', '), ($extra -join ', '))
+          }
+          Write-Host 'Artifact content is strict and valid.' -ForegroundColor Green
+
+      - name: Install PSScriptAnalyzer 1.22+
+        shell: pwsh
+        run: |
+          $min = [version]'1.22.0'
+          $installed = Get-Module -ListAvailable PSScriptAnalyzer | Sort-Object Version -Descending | Select-Object -First 1
+          if (-not $installed -or $installed.Version -lt $min) {
+            Install-Module PSScriptAnalyzer -MinimumVersion 1.22.0 -Scope CurrentUser -Force -SkipPublisherCheck
+          } else {
+            Write-Host "PSScriptAnalyzer $($installed.Version) already available (>= $min)" -ForegroundColor Green
+          }
+
+      - name: Analyze built artifact (ScriptAnalyzer)
+        shell: pwsh
+        run: |
+          Import-Module PSScriptAnalyzer -MinimumVersion 1.22.0 -Force | Out-Null
+          $issues = Invoke-ScriptAnalyzer -Path 'dist/ITFabrik.Stepper/ITFabrik.Stepper.psm1' -Settings 'PSScriptAnalyzerSettings.psd1'
+          if ($issues) {
+            $issues | Select-Object RuleName, Severity, ScriptName, Line, Message | Format-Table -AutoSize
+            throw "ScriptAnalyzer found $($issues.Count) issue(s) in built artifact."
+          }
+          Write-Host 'Built artifact passed ScriptAnalyzer.' -ForegroundColor Green
+
+      - name: Publish Module
+        shell: pwsh
+        env:
+          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+        run: |
+          if (-not $env:PSGALLERY_API_KEY) { throw 'Missing PSGALLERY_API_KEY secret' }
+          ./Scripts/Publish-PSGallery.ps1 -ApiKey $env:PSGALLERY_API_KEY -ModulePath 'dist/ITFabrik.Stepper'

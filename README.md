@@ -29,16 +29,12 @@ Import-Module ITFabrik.Stepper -Force
 Update-Module ITFabrik.Stepper
 ```
 
-- Installation manuelle depuis GitHub Release:
+- Installation manuelle depuis les sources du depot:
 
 ```powershell
-$tag = (Invoke-RestMethod https://api.github.com/repos/ITF-brik/itfabrik.stepper/releases/latest).tag_name
-$zip = Join-Path $env:TEMP "ITFabrik.Stepper-$tag.zip"
-Invoke-WebRequest -Uri "https://github.com/ITF-brik/itfabrik.stepper/releases/download/$tag/ITFabrik.Stepper-$tag.zip" -OutFile $zip
-$dst = Join-Path $HOME "Documents/PowerShell/Modules/ITFabrik.Stepper"
-if (-not (Test-Path $dst)) { New-Item -ItemType Directory -Path $dst -Force | Out-Null }
-Expand-Archive -Path $zip -DestinationPath $dst -Force
-Import-Module ITFabrik.Stepper -Force
+git clone https://github.com/ITF-brik/itfabrik.stepper.git
+Set-Location .\itfabrik.stepper
+Import-Module .\ITFabrik.Stepper.psd1 -Force
 ```
 
 ---

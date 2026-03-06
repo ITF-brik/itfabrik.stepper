@@ -21,7 +21,6 @@ function Invoke-Logger {
         [Parameter(Mandatory)] [ValidateSet('Info','Success','Warning','Error','Debug','Verbose')] [string]$Severity,
         [int]$IndentLevel = [int]::MinValue
     )
-    $logger = $null
     # Indentation: respecte une valeur explicite sinon calcule depuis la step courante
     $explicitIndent = ($IndentLevel -ne [int]::MinValue)
     $finalIndent = if ($explicitIndent) { $IndentLevel } else { 0 }
@@ -36,22 +35,10 @@ function Invoke-Logger {
     # Gestion du niveau Debug et Verbose
     if ($Severity -eq 'Debug') { if ($DebugPreference -eq 'SilentlyContinue') { return } }
     if ($Severity -eq 'Verbose') { if ($VerbosePreference -eq 'SilentlyContinue') { return } }
-    try {
-        $logger = Get-PSVariable -Name 'StepManagerLogger' -ErrorAction Stop
-    } catch {
-        $logger = $null
-        try {
-            $logger = (Get-Variable -Name 'StepManagerLogger' -Scope Script -ErrorAction Stop).Value
-        } catch {
-            try {
-                $logger = (Get-Variable -Name 'StepManagerLogger' -Scope Global -ErrorAction Stop).Value
-            } catch {}
-        }
-    }
+    $logger = Get-StepManagerLogger
     if ($null -eq $logger) {
         Write-StepMessage -Severity $Severity -Message ("[$Component] $Message") -IndentLevel $finalIndent
     } else {
         & $logger $Component $Message $Severity $finalIndent
     }
 }
-

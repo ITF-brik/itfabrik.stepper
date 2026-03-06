@@ -14,6 +14,25 @@ Le message à afficher.
 .PARAMETER IndentLevel
 Niveau d'indentation (nombre d'espaces).
 #>
+function Get-StepManagerLogger {
+    [CmdletBinding()]
+    param()
+
+    $currentScopeVariable = Get-Variable -Name 'StepManagerLogger' -ErrorAction SilentlyContinue
+    if ($null -ne $currentScopeVariable) {
+        return $currentScopeVariable.Value
+    }
+
+    foreach ($scope in @('Script', 'Global')) {
+        $variable = Get-Variable -Name 'StepManagerLogger' -Scope $scope -ErrorAction SilentlyContinue
+        if ($null -ne $variable) {
+            return $variable.Value
+        }
+    }
+
+    return $null
+}
+
 function Write-StepMessage {
     [CmdletBinding()]
     param(
@@ -21,7 +40,6 @@ function Write-StepMessage {
         [Parameter(Mandatory)] [string]$Message,
         [int]$IndentLevel = 0,
         [string]$StepName = '',
-        [string]$Component = '',
         [string]$ForegroundColor
     )
 
@@ -60,4 +78,3 @@ function Write-StepMessage {
     $text = "[$now] $prefix$indent$step $Message"
     Write-Host $text -ForegroundColor $ForegroundColor
 }
-

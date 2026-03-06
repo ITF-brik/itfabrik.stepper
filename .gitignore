@@ -12,6 +12,8 @@ Thumbs.db
 # PowerShell/Packaging
 TestResults/
 PesterTestResults*.xml
+coverage.xml
+coverage/
 *.nupkg
 *.zip
 *.tgz
@@ -20,4 +22,9 @@ PesterTestResults*.xml
 # Build output (if any)
 bin/
 obj/
+dist/
 
+# Local planning workspace files
+findings.md
+progress.md
+task_plan.md

@@ -15,11 +15,15 @@ Indique si l'exécution doit continuer en cas d'erreur dans l'étape.
 Step
 #>
 function New-Step {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string]$Name,
         [switch]$ContinueOnError
     )
+
+    if (-not $PSCmdlet.ShouldProcess($Name, 'Create step')) {
+        return
+    }
 
     $parent = Get-CurrentStep
     $step = [Step]::new($Name, $parent, $ContinueOnError.IsPresent)
@@ -39,4 +43,3 @@ function New-Step {
 
     return $step
 }
-

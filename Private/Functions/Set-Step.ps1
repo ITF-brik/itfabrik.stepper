@@ -1,5 +1,5 @@
 function Set-Step {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)] [ValidateSet('Pending','Success','Error')] [string]$Status,
         [string]$Detail = ''
@@ -7,6 +7,9 @@ function Set-Step {
 
     $current = Get-CurrentStep
     if (-not $current) { return }
+    if (-not $PSCmdlet.ShouldProcess($current.Name, "Set step status to $Status")) {
+        return
+    }
 
     $current.Status = $Status
     $current.Detail = $Detail
@@ -19,4 +22,3 @@ function Set-Step {
         Invoke-Logger -Component 'StepManager' -Severity 'Verbose' -Message "Étape [$($current.Name)] définie sur le statut : $Status"
     }
 }
-

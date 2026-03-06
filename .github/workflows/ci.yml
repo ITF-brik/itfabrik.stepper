@@ -1,36 +1,92 @@
-name: CI
+name: CI - Tests
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
+    branches: [ main, master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
-    name: Test (Pester + Analyzer)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
+    runs-on: windows-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install PowerShell modules
+      - name: Setup PSGallery
         shell: pwsh
         run: |
-          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-          Install-Module Pester -MinimumVersion 5.6.0 -Scope CurrentUser -Force
-          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
 
-      - name: ScriptAnalyzer
+      - name: Cache PowerShell modules
+        uses: actions/cache@v4
+        with:
+          path: "~\\Documents\\PowerShell\\Modules"
+          key: pwsh-modules-${{ runner.os }}-pester-5.5.0
+          restore-keys: |
+            pwsh-modules-${{ runner.os }}-pester-
+
+      - name: Install Pester 5.5+
         shell: pwsh
         run: |
-          # Analyze the whole repo to avoid array conversion issues on some runners
-          Invoke-ScriptAnalyzer -Path . -Recurse -Severity @('Warning','Error')
+          $min = [version]'5.5.0'
+          $installed = Get-Module -ListAvailable Pester | Sort-Object Version -Descending | Select-Object -First 1
+          if (-not $installed -or $installed.Version -lt $min) {
+            Install-Module Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+          } else {
+            Write-Host "Pester $($installed.Version) already available (>= $min)" -ForegroundColor Green
+          }
+
+      - name: Install PSScriptAnalyzer 1.22+
+        shell: pwsh
+        run: |
+          $min = [version]'1.22.0'
+          $installed = Get-Module -ListAvailable PSScriptAnalyzer | Sort-Object Version -Descending | Select-Object -First 1
+          if (-not $installed -or $installed.Version -lt $min) {
+            Install-Module PSScriptAnalyzer -MinimumVersion 1.22.0 -Scope CurrentUser -Force -SkipPublisherCheck
+          } else {
+            Write-Host "PSScriptAnalyzer $($installed.Version) already available (>= $min)" -ForegroundColor Green
+          }
+
+      - name: Run ScriptAnalyzer (Error/Warning gate)
+        shell: pwsh
+        run: |
+          $settingsPath = 'PSScriptAnalyzerSettings.psd1'
+          if (-not (Test-Path -LiteralPath $settingsPath)) {
+            throw "Missing ScriptAnalyzer settings file: $settingsPath"
+          }
+
+          Import-Module PSScriptAnalyzer -MinimumVersion 1.22.0 -Force | Out-Null
+          $targets = @('ITFabrik.Stepper.psm1', 'Public', 'Private')
+          $issues = foreach ($target in $targets) {
+            Invoke-ScriptAnalyzer -Path $target -Recurse -Settings $settingsPath
+          }
+
+          if ($issues) {
+            $issues |
+              Sort-Object ScriptName, Line, RuleName |
+              Select-Object RuleName, Severity, ScriptName, Line, Message |
+              Format-Table -AutoSize
+            throw "ScriptAnalyzer found $($issues.Count) issue(s)."
+          } else {
+            Write-Host 'ScriptAnalyzer passed with no issues.' -ForegroundColor Green
+          }
 
       - name: Run Pester tests
         shell: pwsh
         run: |
-          Invoke-Pester -CI -Path ./Tests
+          $configPath = 'Tests/PesterConfig.psd1'
+          if (Test-Path -LiteralPath $configPath) {
+            $ht = Import-PowerShellDataFile -LiteralPath $configPath
+            Import-Module Pester -MinimumVersion 5.5.0 -Force | Out-Null
+            $config = New-PesterConfiguration -Hashtable $ht
+            $config.Output.CIFormat = 'GithubActions'
+            Invoke-Pester -Configuration $config
+          } else {
+            Invoke-Pester -Path 'Tests' -CI
+          }

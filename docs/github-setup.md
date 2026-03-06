@@ -1,25 +1,25 @@
-# Procédure GitHub pour itfabrik.stepper
+# Procedure GitHub pour ITFabrik.Stepper
 
-Ce document décrit la création du dépôt GitHub, la configuration des secrets et des workflows pour publier le module sur PowerShell Gallery et exécuter les tests Pester.
+Ce document decrit la creation du depot GitHub, la configuration des secrets et des workflows pour publier le module sur PowerShell Gallery et executer les tests Pester.
 
-## 1) Créer le dépôt sur GitHub
-- Nom: `itfabrik.stepper`
+## 1) Creer le depot sur GitHub
+- Nom: `ITFabrik.Stepper`
 - Visibilite: Public (recommande pour un module publie)
 - Ne pas initialiser avec README / .gitignore / licence (ces fichiers existent deja localement)
 
 Via l'UI GitHub:
-1. New repository ^ Name: `itfabrik.stepper`
+1. New repository ^ Name: `ITFabrik.Stepper`
 2. Public
 3. Laisser decoche "Add a README", "Add .gitignore", "Choose a license"
 4. Create repository
 
 Option CLI (si GitHub CLI):
 ```bash
-gh repo create itfabrik.stepper --public --source . --remote origin --push
+gh repo create ITFabrik.Stepper --public --source . --remote origin --push
 ```
 
-## 2) Préparer le dépôt local
-Dans `c:\Developpement\Scripting\Modules\itfabrik.stepper`:
+## 2) Preparer le depot local
+Dans `c:\Developpement\Scripting\Modules\ITfabrik.Stepper`:
 ```powershell
 git init
 git branch -M main
@@ -31,27 +31,28 @@ Un `.gitignore` adapte a ete ajoute: `.gitignore`.
 Puis premier commit:
 ```powershell
 git add .
-git commit -m "Initial commit: itfabrik.stepper"
+git commit -m "Initial commit: ITFabrik.Stepper"
 ```
 
 ## 3) Lier le remote et pousser
-Récupérez l'URL GitHub (ex: `https://github.com/<org>/itfabrik.stepper.git`) puis:
+Recuperez l'URL GitHub (ex: `https://github.com/<org>/ITFabrik.Stepper.git`) puis:
 ```powershell
-git remote add origin https://github.com/<org>/itfabrik.stepper.git
+git remote add origin https://github.com/<org>/ITFabrik.Stepper.git
 git push -u origin main
 ```
 
 ## 4) Configurer GitHub Actions
-Deux workflows existent dans `.github/workflows`:
-- CI Pester: `.github/workflows/ci.yml` - exécute les tests Pester et l’analyseur sur plusieurs OS.
-- Release + Publication PSGallery: `.github/workflows/release.yml` - déclenché par un tag `v*`, crée une release GitHub et publie sur PowerShell Gallery.
+Quatre workflows existent dans `.github/workflows`:
+- `.github/workflows/ci.yml` - execute ScriptAnalyzer et les tests Pester sur `push`, `pull_request` et `workflow_dispatch`.
+- `.github/workflows/pester-coverage.yml` - execute Pester avec gate de couverture.
+- `.github/workflows/check-tag.yml` - verifie qu'un tag `vX.Y.Z` correspond a `ModuleVersion`.
+- `.github/workflows/publish.yml` - declenche manuellement ou lors d'une release publiee, construit l'artifact `dist/ITFabrik.Stepper` puis publie sur PowerShell Gallery.
 
 Permissions Actions (par defaut suffisantes):
 - Settings ^ Actions ^ General ^ Workflow permissions ^ Read repository contents
 
-## 5) Secrets requis
-- `PSGALLERY_API_KEY` (publication PowerShell Gallery)
-- `RELEASE_TOKEN` (création de release GitHub via `softprops/action-gh-release`)
+## 5) Secret PowerShell Gallery
+Le workflow de publication requiert `PSGALLERY_API_KEY`.
 - PowerShell Gallery ^ Profile ^ API Keys ^ Creer une cle (Scope: Push, expiration selon besoin)
 - GitHub ^ Repository ^ Settings ^ Secrets and variables ^ Actions ^ New repository secret
   - Name: `PSGALLERY_API_KEY`
@@ -59,35 +60,32 @@ Permissions Actions (par defaut suffisantes):
 
 ## 6) Publier une nouvelle version
 
-Deux options pour garder `ModuleVersion` et le tag `vX.Y.Z` alignes:
-
-- Source de vérité = tag (workflow actuel)
-  1. Mettre à jour `ModuleVersion` dans `itfabrik.stepper.psd1` (ex: `X.Y.Z`).
-  2. Commit & push:
-     ```powershell
-     git add itfabrik.stepper.psd1
-     git commit -m "Bump version to X.Y.Z"
-     git push
-     ```
-  3. Créer et pousser le tag `vX.Y.Z`:
-     ```powershell
-     git tag vX.Y.Z
-     git push origin vX.Y.Z
-     ```
-  4. Le workflow `release.yml` va packager, créer la release et publier sur PSGallery (si `PSGALLERY_API_KEY` est présent).
-
-- Source de verite = tag (moins pratique)
-  - Creer un tag `vX.Y.Z`, puis mettre a jour manuellement `ModuleVersion = 'X.Y.Z'` dans le manifeste dans le meme commit/PR. (Le workflow refusera la publication si non aligne.)
-
-Le workflow de publication contient une etape de validation qui echoue si `ModuleVersion` <> `vX.Y.Z`.
+Source de verite recommandee = manifeste:
+1. Mettre a jour `ModuleVersion` dans `ITFabrik.Stepper.psd1`.
+2. Commit & push:
+   ```powershell
+   git add ITFabrik.Stepper.psd1 CHANGELOG.md
+   git commit -m "Bump version to X.Y.Z"
+   git push
+   ```
+3. Creer et pousser le tag depuis le manifeste:
+   ```powershell
+   ./Scripts/New-ReleaseTag.ps1 -Push
+   ```
+4. Le workflow `.github/workflows/check-tag.yml` verifie automatiquement l'alignement tag/version.
+5. Creer ensuite la release GitHub en selectionnant ce tag.
+6. Le workflow `.github/workflows/publish.yml` publie sur PowerShell Gallery lors de `release: published`.
 
 ## 7) Bonnes pratiques
 - Proteger `main` (PRs et reviews) une fois le depot public.
 - Maintenir `ModuleVersion` et le tag `vX.Y.Z` alignes.
-- Ajouter des Topics GitHub: `powershell`, `powershell-module`, `logging`.
+- Ajouter des Topics GitHub: `powershell`, `powershell-module`, `logging`, `workflow`.
 - Tests Pester: les fichiers dans `Tests/` sont lances par `.github/workflows/ci.yml`.
 
-Références utiles:
+References utiles:
 - CI: `.github/workflows/ci.yml`
-- Release + publication PSGallery: `.github/workflows/release.yml`
-- Manifeste module: `itfabrik.stepper.psd1`
+- Coverage: `.github/workflows/pester-coverage.yml`
+- Verification tag: `.github/workflows/check-tag.yml`
+- Publication: `.github/workflows/publish.yml`
+- Scripts: `Scripts/Build-Module.ps1`, `Scripts/Publish-PSGallery.ps1`, `Scripts/New-ReleaseTag.ps1`
+- Manifeste module: `ITFabrik.Stepper.psd1`
