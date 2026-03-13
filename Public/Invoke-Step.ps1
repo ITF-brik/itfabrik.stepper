@@ -10,6 +10,9 @@ Le cmdlet peut aussi traiter une collection d'éléments. Dans ce mode, une éta
 parente est créée avec une sous-étape par élément. L'exécution est séquentielle
 par défaut. En PowerShell 7+, l'option `-Parallel` utilise `ForEach-Object -Parallel`.
 En Windows PowerShell 5.1, elle utilise `Start-Job` avec gestion du `ThrottleLimit`.
+Dans ce mode parallèle, le worker reconstruit le `ScriptBlock` utilisateur dans
+un contexte isolé. Les variables externes et helpers du scope appelant ne sont
+donc pas garantis. Préférez un `ScriptBlock` autonome basé sur `param($item, $index)`.
 
 .PARAMETER Name
 Nom de l'étape à exécuter.
@@ -60,37 +63,12 @@ function Get-InvokeStepCapturedVariableMap {
     )
 
     $captured = @{}
-    $excluded = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    foreach ($name in @(
-            '_', 'PSItem', 'args', 'input', 'this', 'true', 'false', 'null',
-            'PWD', 'HOME', 'PID', 'PSVersionTable', 'PSScriptRoot', 'PSCommandPath',
-            'ExecutionContext', 'MyInvocation', 'PSBoundParameters', 'Matches', 'Error',
-            'Host', 'VerbosePreference', 'DebugPreference', 'ErrorActionPreference',
-            'WarningPreference', 'InformationPreference', 'ConfirmPreference', 'WhatIfPreference'
-        )) {
-        [void]$excluded.Add($name)
-    }
-
-    $paramNames = @()
-    if ($ScriptBlock.Ast.ParamBlock) {
-        $paramNames = @($ScriptBlock.Ast.ParamBlock.Parameters | ForEach-Object { $_.Name.VariablePath.UserPath })
-        foreach ($paramName in $paramNames) {
-            [void]$excluded.Add($paramName)
+    $variableInfos = Get-InvokeStepExternalVariableInfo -ScriptBlock $ScriptBlock
+    foreach ($variableInfo in $variableInfos) {
+        $name = $variableInfo.LookupName
+        if ([string]::IsNullOrWhiteSpace($name)) {
+            continue
         }
-    }
-
-    $variableAsts = $ScriptBlock.Ast.FindAll({
-            param($ast)
-            $ast -is [System.Management.Automation.Language.VariableExpressionAst]
-        }, $true)
-
-    foreach ($variableAst in $variableAsts) {
-        if ($variableAst.Splatted) { continue }
-
-        $name = $variableAst.VariablePath.UserPath
-        if ([string]::IsNullOrWhiteSpace($name)) { continue }
-        if ($excluded.Contains($name)) { continue }
-        if ($captured.ContainsKey($name)) { continue }
 
         $variable = $null
         if ($ScriptBlock.Module) {
@@ -124,6 +102,106 @@ function Get-InvokeStepCapturedVariableMap {
     }
 
     return $captured
+}
+
+function Get-InvokeStepExternalVariableInfo {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ScriptBlock]$ScriptBlock
+    )
+
+    $excluded = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($name in @(
+            '_', 'PSItem', 'args', 'input', 'this', 'true', 'false', 'null',
+            'PWD', 'HOME', 'PID', 'PSVersionTable', 'PSScriptRoot', 'PSCommandPath',
+            'ExecutionContext', 'MyInvocation', 'PSBoundParameters', 'Matches', 'Error',
+            'Host', 'VerbosePreference', 'DebugPreference', 'ErrorActionPreference',
+            'WarningPreference', 'InformationPreference', 'ConfirmPreference', 'WhatIfPreference'
+        )) {
+        [void]$excluded.Add($name)
+    }
+
+    $paramNames = @()
+    if ($ScriptBlock.Ast.ParamBlock) {
+        $paramNames = @($ScriptBlock.Ast.ParamBlock.Parameters | ForEach-Object { $_.Name.VariablePath.UserPath })
+        foreach ($paramName in $paramNames) {
+            [void]$excluded.Add($paramName)
+        }
+    }
+
+    $localDefinitions = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($assignmentAst in $ScriptBlock.Ast.FindAll({
+                param($ast)
+                $ast -is [System.Management.Automation.Language.AssignmentStatementAst]
+            }, $true)) {
+        $left = $assignmentAst.Left
+        if ($left -is [System.Management.Automation.Language.VariableExpressionAst]) {
+            $localName = $left.VariablePath.UserPath -replace '^(?i)(?:global|local|private|script):', ''
+            if (-not [string]::IsNullOrWhiteSpace($localName)) {
+                [void]$localDefinitions.Add($localName)
+            }
+        }
+    }
+
+    foreach ($foreachAst in $ScriptBlock.Ast.FindAll({
+                param($ast)
+                $ast -is [System.Management.Automation.Language.ForEachStatementAst]
+            }, $true)) {
+        if ($foreachAst.Variable -is [System.Management.Automation.Language.VariableExpressionAst]) {
+            $localName = $foreachAst.Variable.VariablePath.UserPath -replace '^(?i)(?:global|local|private|script):', ''
+            if (-not [string]::IsNullOrWhiteSpace($localName)) {
+                [void]$localDefinitions.Add($localName)
+            }
+        }
+    }
+
+    $captured = [System.Collections.Generic.List[object]]::new()
+    $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $variableAsts = $ScriptBlock.Ast.FindAll({
+            param($ast)
+            $ast -is [System.Management.Automation.Language.VariableExpressionAst]
+        }, $true)
+
+    foreach ($variableAst in $variableAsts) {
+        if ($variableAst.Splatted) { continue }
+
+        $name = $variableAst.VariablePath.UserPath
+        if ([string]::IsNullOrWhiteSpace($name)) { continue }
+        if ($name -match '^(?i)env:') { continue }
+        if ($excluded.Contains($name)) { continue }
+        $lookupName = $name -replace '^(?i)(?:global|local|private|script):', ''
+        if ([string]::IsNullOrWhiteSpace($lookupName)) { continue }
+        if ($localDefinitions.Contains($lookupName)) { continue }
+
+        $displayName = $variableAst.Extent.Text
+        if ([string]::IsNullOrWhiteSpace($displayName)) {
+            $displayName = '$' + $name
+        }
+
+        if ($seen.Add($displayName)) {
+            [void]$captured.Add([pscustomobject]@{
+                    LookupName = $lookupName
+                    DisplayName = $displayName
+                })
+        }
+    }
+
+    return $captured
+}
+
+function Write-InvokeStepParallelContextWarning {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ScriptBlock]$ScriptBlock
+    )
+
+    $externalVariables = @(Get-InvokeStepExternalVariableInfo -ScriptBlock $ScriptBlock)
+    if ($externalVariables.Count -eq 0) {
+        return
+    }
+
+    $variableList = @($externalVariables | ForEach-Object DisplayName) -join ', '
+    Write-Warning ("Invoke-Step -Parallel detected external variable references in the ScriptBlock: {0}. Worker runspaces/jobs do not reliably preserve caller-local closure state. Prefer a self-contained ScriptBlock that depends on param(`$item, `$index) and explicit literal or recomputable data." -f $variableList)
 }
 
 function Get-InvokeStepChildName {
@@ -314,6 +392,7 @@ function Invoke-StepForEachParallelInternal {
 
     $moduleManifestPath = Get-InvokeStepModuleManifestPath
     $scriptText = $ScriptBlock.ToString()
+    Write-InvokeStepParallelContextWarning -ScriptBlock $ScriptBlock
     $capturedVariables = Get-InvokeStepCapturedVariableMap -ScriptBlock $ScriptBlock
     $parentStep = Get-CurrentStep
     $payloads = for ($index = 0; $index -lt $InputObject.Count; $index++) {

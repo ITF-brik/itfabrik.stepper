@@ -167,6 +167,40 @@ Points a retenir:
 - Les logs emis par les workers paralleles sont rejoues dans l'ordre des elements pour garder une sortie stable.
 - Le `ScriptBlock` recoit toujours `param($item, $index)`.
 
+Important:
+- En mode parallele, le worker reconstruit le `ScriptBlock` utilisateur dans un runspace/job isole.
+- Ne comptez pas sur une fermeture PowerShell implicite pour transporter des variables locales appelantes, des variables preparees dans un `ScriptBlock` parent, des hashtables/objets de contexte, ou des helpers utilisateur non reimportes.
+- Considerez comme fiables seulement `param($item, $index)`, le module ITFabrik.Stepper recharge dans le worker, et les commandes natives/disponibles explicitement dans ce worker.
+- Si du contexte metier est necessaire, preparez-le en amont et construisez un `ScriptBlock` autonome qui embarque ses donnees sous forme de litteraux ou qui peut tout recalculer depuis l'item courant.
+
+Exemple de `ScriptBlock` autonome:
+
+```powershell
+$parallelScript = [scriptblock]::Create(@'
+param($item, $index)
+$destinationByInf = @{
+    alpha = 'A'
+    beta = 'B'
+}
+
+$destination = $destinationByInf[$item]
+if ($null -eq $destination) {
+    throw "missing destination for $item"
+}
+
+Invoke-Step -Name "Copie $item $index" -ScriptBlock {
+    Write-Log -Message "Destination: $destination" -Severity Info
+}
+'@)
+
+Invoke-Step -Name 'Export autonome' `
+    -InputObject @('alpha', 'beta') `
+    -Parallel `
+    -ThrottleLimit 2 `
+    -PassThru `
+    -ScriptBlock $parallelScript
+```
+
 ### Gestion d'erreur
 
 ```powershell

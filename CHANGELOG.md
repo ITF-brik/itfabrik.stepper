@@ -6,6 +6,15 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [Unreleased]
 
+## [1.0.11] - 2026-03-13
+
+### Added
+- Tests de non-regression pour la limite reelle de fermeture PowerShell en mode `Invoke-Step -Parallel` et pour le pattern de `ScriptBlock` autonome recommande.
+
+### Changed
+- `Invoke-Step -Parallel` avertit maintenant lorsqu'un `ScriptBlock` reference des variables externes qui ne sont pas preservees de facon fiable entre le scope appelant et les workers.
+- La documentation utilisateur precise que les workers paralleles doivent etre traites comme des contextes isoles et recommande un `ScriptBlock` autonome pour le contexte metier.
+
 ## [1.0.10] - 2026-03-06
 
 ### Fixed

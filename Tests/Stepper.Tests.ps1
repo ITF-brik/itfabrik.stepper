@@ -235,6 +235,61 @@ Describe 'ITFabrik.Stepper' {
         $parent.Children[1].Detail | Should -Be 'parallel boom'
     }
 
+    It 'warns when a parallel script block depends on caller-local variables' -Skip:($PSVersionTable.PSVersion.Major -lt 7) {
+        $script:InvokeStepWarnings = @()
+
+        $parent = & {
+            $destinationByInf = @{
+                alpha = 'A'
+                beta = 'B'
+            }
+
+            Invoke-Step -Name 'Parallel closure' -InputObject @('alpha', 'beta') -Parallel -ThrottleLimit 2 -ContinueOnError -PassThru -WarningVariable script:InvokeStepWarnings -ScriptBlock {
+                param($item)
+                $null = $destinationByInf[$item]
+            }
+        }
+
+        $warningText = ($script:InvokeStepWarnings -join ' ')
+        $script:InvokeStepWarnings.Count | Should -BeGreaterThan 0
+        $warningText | Should -Match ([regex]::Escape('$destinationByInf'))
+        $warningText | Should -Match 'self-contained ScriptBlock'
+        @($parent.Children | ForEach-Object Status) | Should -Be @('Error', 'Error')
+        @($parent.Children | ForEach-Object Detail) | Should -Be @(
+            'Cannot index into a null array.',
+            'Cannot index into a null array.'
+        )
+    }
+
+    It 'supports autonomous parallel script blocks that embed their own data' -Skip:($PSVersionTable.PSVersion.Major -lt 7) {
+        $script:InvokeStepWarnings = @()
+        $autonomousScript = [scriptblock]::Create(@'
+param($item, $index)
+$destinationByInf = @{
+    alpha = 'A'
+    beta = 'B'
+}
+
+if ($destinationByInf[$item] -eq $null) {
+    throw "missing:$item"
+}
+
+Invoke-Step -Name "Inner $item $index" -ScriptBlock { }
+'@)
+
+        $parent = Invoke-Step -Name 'Parallel autonomous' -InputObject @('alpha', 'beta') -Parallel -ThrottleLimit 2 -PassThru -WarningVariable script:InvokeStepWarnings -ScriptBlock $autonomousScript
+
+        $script:InvokeStepWarnings.Count | Should -Be 0
+        $parent.Status | Should -Be 'Success'
+        @($parent.Children | ForEach-Object Status) | Should -Be @('Success', 'Success')
+        @($parent.Children | ForEach-Object {
+                $_.Children[0].Name
+            }) | Should -Be @(
+            'Inner alpha 0',
+            'Inner beta 1'
+        )
+    }
+
     It 'replays worker logs through the caller logger in input order when running in parallel' {
         $events = [System.Collections.Generic.List[object]]::new()
         $customLogger = {
